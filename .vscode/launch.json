@@ -1,0 +1,25 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/GameLoader.exe",
+            "args": [
+                "D:\\Study\\CloudGaming\\CloudGamming\\build\\Debug\\Hook.dll",
+                // "D:\\Study\\CloudGaming\\DirectXSDK\\Samples\\C++\\Direct3D11\\Bin\\x64\\SimpleSample11.exe"
+                // "D:\\Game\\SteamLibrary\\steamapps\\common\\Limbo\\limbo.exe"
+                // "D:\\Game\\Overcooked\\Overcooked.exe"
+                "D:\\Game\\Torchlight2\\Torchlight2.exe"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal"
+        }
+    ]
+}
