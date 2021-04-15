@@ -4,9 +4,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
-include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.10056.0/ucrt)
+# include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
+# include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.10056.0/ucrt)
 include_directories(Lib)
+include_directories(Common)
 
 find_library(DETOURS_LIB detours HINTS "./Lib")
 
@@ -14,3 +15,6 @@ find_library(DETOURS_LIB detours HINTS "./Lib")
 
 add_subdirectory(DirectXHook)
 add_subdirectory(GameLoader)
+add_subdirectory(Common)
+add_subdirectory(Client)
+add_subdirectory(Lib)
