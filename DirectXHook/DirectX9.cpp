@@ -3,6 +3,7 @@
 #include "DirectX9.hh"
 #include "Logger.hh"
 #include "Module.hh"
+#include "RenderStream.hh"
 #include "Timer.h"
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
@@ -47,14 +48,10 @@ TD3D9CreateDevice pD3D9CreateDevice = NULL;
 TD3D9DevicePresent pD3D9DevicePresent = NULL;
 TD3D9SwapChainPresent pD3D9SwapChainPresent = NULL;
 TD3D9GetSwapChain pD3D9GetSwapChain = NULL;
-Timer timer;
-WNDPROC OriginalWndProcHandler = nullptr;
-bool g_ShowMenu = false;
-
+RenderStream* streamer = nullptr;
 DllExport IDirect3D9 * WINAPI hook_Direct3DCreate9(UINT SDKVersion);
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-bool HookD3D9()
+bool HookD3D9(RenderStream* stream)
 {
     HMODULE hMod = CheckModule("d3d9.dll");
     if (hMod == NULL) return false;
@@ -64,33 +61,8 @@ bool HookD3D9()
     LOG << "DetourAttach:" << DetourAttach(&(LPVOID&)pDirect3DCreate9, hook_Direct3DCreate9) << std::endl;
     DetourTransactionCommit();
     LOG << "Hook D3D9 done..." << std::endl;
+    streamer = stream;
     return true;
-}
-
-
-LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-    POINT mPos;
-    GetCursorPos(&mPos);
-    ScreenToClient(hWnd, &mPos);
-    ImGui::GetIO().MousePos.x = mPos.x;
-    ImGui::GetIO().MousePos.y = mPos.y;
-
-    if (uMsg == WM_KEYUP)
-    {
-        if (wParam == VK_INSERT)
-        {
-            g_ShowMenu = !g_ShowMenu;
-        }
-
-    }
-
-    if (g_ShowMenu)
-    {
-        ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam);
-        return true;
-    }
-    return CallWindowProc(OriginalWndProcHandler, hWnd, uMsg, wParam, lParam);
 }
 
 HRESULT STDMETHODCALLTYPE hook_D3D9SwapChainPresent(
@@ -102,20 +74,8 @@ HRESULT STDMETHODCALLTYPE hook_D3D9SwapChainPresent(
     DWORD dwFlags
 )
 {
-    timer.Tick();
     ImGui_ImplDX9_NewFrame();
-    ImGui_ImplWin32_NewFrame();
-    ImGui::NewFrame();
-    //Menu is displayed when g_ShowMenu is TRUE
-    if (g_ShowMenu)
-    {
-        ImGui::Begin("Hello, world!"); 
-        ImGui::Text("FPS: %d, frame time: %f", timer.GetFPS(), timer.GetDeltaTime());
-        ImGui::End();
-    }
-    ImGui::EndFrame();
-
-    ImGui::Render();
+    streamer->TickFrame();
     ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
     HRESULT hr = pD3D9SwapChainPresent(This, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion, dwFlags);
     // If (In frame to capture frame)
@@ -176,17 +136,9 @@ DllExport HRESULT __stdcall hook_D3D9CreateDevice(
     HRESULT hr = pD3D9CreateDevice(This, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
     if(FAILED(hr))
         return hr;
-    OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(hFocusWindow, GWLP_WNDPROC, (LONG_PTR)hWndProc);
-    ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    ImGui::StyleColorsDark();
-    ImGui_ImplWin32_Init(hFocusWindow);
-    // auto f = io.Fonts->AddFontFromFileTTF("D:\\Code\\imgui\\misc\\fonts\\ProggyClean.ttf", 16);
-    // LOG << "Font: " << f << std::endl;
-    ImGui::GetIO().ImeWindowHandle = hFocusWindow;
+    streamer->InitImGui(hFocusWindow);
+
     if (pD3D9DevicePresent == NULL) {
         uintptr_t* pInterfaceVTable = (uintptr_t*)*(uintptr_t*)*ppReturnedDeviceInterface;
         // 14: IDirect3DDevice9::GetSwapChain,  17: IDirect3DDevice9::Present

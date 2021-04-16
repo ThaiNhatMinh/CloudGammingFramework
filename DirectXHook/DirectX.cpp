@@ -3,6 +3,9 @@
 #include "DirectX9.hh"
 #include "Logger.hh"
 #include "Module.hh"
+#include "OpenGL.hh"
+#include "RenderStream.hh"
+#include "imgui/imgui_impl_dx11.h"
 
 typedef HRESULT(WINAPI* TDXGISwapChainPresent)(IDXGISwapChain* This, UINT SyncInterval, UINT Flags);
 typedef HRESULT(WINAPI* TCreateDXGIFactory)(REFIID riid, void** ppFactory);
@@ -17,10 +20,13 @@ TCreateDXGIFactory pCreateDXGIFactory = NULL;
 TCreateDXGIFactory1 pCreateDXGIFactory1 = NULL;
 TCreateDXGIFactory2 pCreateDXGIFactory2 = NULL;
 TDXGICreateSwapChain pDXGICreateSwapChain = NULL;
+RenderStream streamer;
 
 void DumpValues();
 
 DllExport HRESULT __stdcall hook_DXGISwapChainPresent(IDXGISwapChain* This, UINT SyncInterval, UINT Flags) {
+    ImGui_ImplDX11_NewFrame();
+    streamer.TickFrame();
     HRESULT hr = pDXGISwapChainPresent(This, SyncInterval, Flags);
     return hr;
 }
@@ -29,6 +35,10 @@ void proc_hook_IDXGISwapChain_Present(IDXGISwapChain* ppSwapChain) {
     TRACE;
     uintptr_t* pInterfaceVTable = (uintptr_t*)*(uintptr_t*)ppSwapChain;
     pDXGISwapChainPresent = (TDXGISwapChainPresent)pInterfaceVTable[8];
+    DXGI_SWAP_CHAIN_DESC desc;
+    ppSwapChain->GetDesc(&desc);
+    streamer.InitImGui(desc.OutputWindow);
+    LOG << "W: " << desc.BufferDesc.Width << " H: " << desc.BufferDesc.Height << std::endl;
 
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
@@ -54,6 +64,7 @@ DllExport HRESULT WINAPI hook_D3D11CreateDeviceAndSwapChain(
     HRESULT hr = pD3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
     if (pDXGISwapChainPresent == NULL && pAdapter != NULL && ppSwapChain != NULL && ppDevice != NULL) {
         proc_hook_IDXGISwapChain_Present(*ppSwapChain);
+        ImGui_ImplDX11_Init(*ppDevice, *ppImmediateContext);
     }
     return hr;
 }
@@ -70,6 +81,9 @@ DllExport HRESULT __stdcall hook_DXGICreateSwapChain(IDXGIFactory* This, IUnknow
 DllExport HRESULT __stdcall hook_CreateDXGIFactory(REFIID riid, void** ppFactory) {
     TRACE;
     HRESULT hr = pCreateDXGIFactory(riid, ppFactory);
+    LOG << (riid == IID_IDXGIFactory) << " " << ppFactory << std::endl;
+    LOG << (riid == IID_IDXGIFactory1)  << std::endl;
+    LOG << (riid == IID_IDXGIFactory2)  << std::endl;
     if (pDXGICreateSwapChain == NULL && riid == IID_IDXGIFactory && ppFactory != NULL) {
 
         uintptr_t* pInterfaceVTable = (uintptr_t*)*(uintptr_t*)*ppFactory;
@@ -160,19 +174,8 @@ void DumpValues()
 void HookDirectX()
 {
     TRACE;
-    while (true)
-    {
-        if (HookD3D9()) break;
-        Sleep(100);
-    }
-    while (true)
-    {
-        if (HookD3D11()) break;
-        Sleep(100);
-    }
-    while (true)
-    {
-        if (HookDXGI()) break;
-        Sleep(100);
-    }
+    HookD3D9(&streamer);
+    HookD3D11();
+    HookDXGI();
+    HookOpenGL();
 }

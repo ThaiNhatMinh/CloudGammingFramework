@@ -1,3 +1,4 @@
 #pragma once
 
-bool HookD3D9();
+class RenderStream;
+bool HookD3D9(RenderStream* streamer);
