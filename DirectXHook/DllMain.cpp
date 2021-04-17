@@ -1,6 +1,13 @@
 #include "pch.h"
 #include "DllMain.h"
+#include "DirectX9.hh"
+#include "DirectX10.hh"
+#include "DirectX11.hh"
+#include "DXGI.hh"
+#include "OpenGL.hh"
+#include "RenderStream.hh"
 
+RenderStream* streamer = nullptr;
 
 void ConsoleSetup()
 {
@@ -15,8 +22,14 @@ void ConsoleSetup()
 
 void MainThread(void* pHandle)
 {
+    TRACE;
     ConsoleSetup();
-    HookDirectX();
+    streamer = new RenderStream();
+    HookD3D11();
+    HookDXGI();
+    HookD3D9();
+    HookD3D10();
+    HookOpenGL();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)

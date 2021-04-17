@@ -1,3 +1,3 @@
 #pragma once
 
-void HookDirectX();
+bool HookD3D11();
