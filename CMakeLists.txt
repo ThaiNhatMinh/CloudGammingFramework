@@ -4,9 +4,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# include_directories($ENV{UniversalCRTSdkDir}/Include/ucrt)
-# include_directories($ENV{UniversalCRTSdkDir}/Include/10.0.10056.0/ucrt)
 include_directories(Lib)
+include_directories(Lib/glfw-3.3.4/include)
+include_directories(Lib/glew-2.1.0/include)
+include_directories(Lib/glad/include)
 include_directories(Common)
 
 find_library(DETOURS_LIB detours HINTS "./Lib")
