@@ -1,3 +1,5 @@
+#include "StreamProtocol.hh"
+#include "Logger.hh"
 #include "RenderStream.hh"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
@@ -5,9 +7,22 @@
 RenderStream* instance;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-RenderStream::RenderStream()
+RenderStream::RenderStream():m_pBuffer(nullptr), m_ShowMenu(false)
 {
+    Socket::InitSocket();
+    if (!m_server.Listen(PORT))
+    {
+        LOG << "Open port " << PORT << " failed" << std::endl;
+    }
+    // m_server.EnableNonblock();
+    m_serverRunning = true;
+    m_thread = std::thread(&RenderStream::ServerThread, this);
     instance = this;
+}
+
+RenderStream::~RenderStream()
+{
+    m_serverRunning = false;
 }
 
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -23,19 +38,14 @@ LRESULT RenderStream::hWndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
     ImGui::GetIO().MousePos.x = (float)mPos.x;
     ImGui::GetIO().MousePos.y = (float)mPos.y;
 
-    if (uMsg == WM_KEYUP)
+    if (uMsg == WM_KEYUP && wParam == VK_INSERT)
     {
-        if (wParam == VK_INSERT)
-        {
-            m_ShowMenu = !m_ShowMenu;
-        }
-
+        m_ShowMenu = !m_ShowMenu;
     }
 
     if (m_ShowMenu)
     {
         ImGui_ImplWin32_WndProcHandler(m_hwnd, uMsg, wParam, lParam);
-        return true;
     }
     return CallWindowProc(m_OriginalWndProcHandler, m_hwnd, uMsg, wParam, lParam);
 }
@@ -59,6 +69,7 @@ void RenderStream::TickFrame()
 
 void RenderStream::InitImGui(HWND hwnd)
 {
+    TRACE;
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     (void)io;
@@ -68,4 +79,42 @@ void RenderStream::InitImGui(HWND hwnd)
     ImGui::GetIO().ImeWindowHandle = hwnd;
     m_OriginalWndProcHandler = (WNDPROC)SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR)::hWndProc);
     m_hwnd = hwnd;
+}
+
+void RenderStream::SetFrameSize(std::size_t w, std::size_t h)
+{
+    TRACE;
+    LOG << "Width: " << w << " Height: " << h << std::endl;
+    if (m_pBuffer) delete[] m_pBuffer;
+    m_pBuffer = new char[w * h * BYTE_PER_PIXEL];
+    m_Width = w;
+    m_Height = h;
+}
+
+char* RenderStream::GetBuffer()
+{
+    TRACE;
+    return m_pBuffer;
+}
+
+void RenderStream::SendFrame()
+{
+}
+
+void RenderStream::ServerThread()
+{
+    TRACE;
+    while (m_serverRunning)
+    {
+        struct sockaddr_in remoteaddr;
+        Socket cl = m_server.Accept(&remoteaddr);
+        if (cl.IsValid())
+        {
+            LOG << "Accecpt client from: " << remoteaddr.sin_port << std::endl;
+            m_client = std::move(cl);
+            std::string cmd = BuildSetupCommand(m_Width, m_Height, "ASDSD");
+            LOG << cmd << std::endl;
+            LOG << "Sent SETUP: " << m_client.SendAll(cmd) << std::endl;
+        }
+    }
 }

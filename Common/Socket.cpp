@@ -15,8 +15,23 @@
 #define INVALID_SOCKET (~0)
 #define SOCKET_ERROR (-1)
 #elif defined(WIN32) || defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <WinSock2.h>
 #include <ws2tcpip.h>
 #endif
+#include "Logger.hh"
+
+
+void SocketErrror()
+{
+#ifdef WIN32
+    int error = WSAGetLastError();
+    LOG << "[Socket] Error:" << error << std::endl;
+#else
+    LOG << "[Socket] Error:" << errnostr(errno) << std::endl;
+#endif
+}
 
 Socket::Socket() : m_Handle(INVALID_SOCKET)
 {
@@ -55,13 +70,15 @@ bool Socket::Connect(std::string ip, USHORT port)
     if (inet_pton(AF_INET, ip.c_str(), &(remote.sin_addr)) <= 0)
     {
         std::cerr << "[Socket] Can't set remote sin_addr";
+        SocketErrror();
         return 0;
     }
 
     remote.sin_port = htons(port);
     if (connect(m_Handle, (struct sockaddr *)&remote, sizeof(struct sockaddr)) < 0)
     {
-
+        LOG << "[Socket] Connect error" << std::endl;
+        SocketErrror();
         return 0;
     }
 
@@ -84,22 +101,22 @@ bool Socket::ConnectToHost(std::string host, USHORT port)
     // 	return 0;
     // }
 
-    struct addrinfo hints, *servinfo, *p;
-    struct sockaddr_in *h;
+    struct addrinfo hints, *servinfo;
     int rv;
 
-    memset(&hints, 0, sizeof hints);
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC; // use AF_INET6 to force IPv6
     hints.ai_socktype = SOCK_STREAM;
 
     if ((rv = getaddrinfo(host.c_str(), "http", &hints, &servinfo)) != 0)
     {
         std::cout << "[Socket] Can't get address info: " << host << ":" << port << std::endl;
+        SocketErrror();
         return false;
     }
 
     bool r = false;
-    for (auto ptr = servinfo; p != NULL; p = p->ai_next)
+    for (auto ptr = servinfo; ptr != NULL; ptr = ptr->ai_next)
     {
         m_Handle = socket(ptr->ai_family, ptr->ai_socktype,
                           ptr->ai_protocol);
@@ -130,6 +147,7 @@ bool Socket::ConnectToHost(std::string host, USHORT port)
 
 bool Socket::Listen(std::size_t port)
 {
+    TRACE;
     std::stringstream ss;
     ss << port;
     struct addrinfo *result = NULL, *ptr = NULL, hints;
@@ -145,30 +163,32 @@ bool Socket::Listen(std::size_t port)
     auto iResult = getaddrinfo(NULL, ss.str().c_str(), &hints, &result);
     if (iResult != 0)
     {
-        printf("[Socket] getaddrinfo failed: %d\n", iResult);
-
+        LOG << "[Socket] getaddrinfo failed: " << iResult << std::endl;
+        SocketErrror();
         return 0;
     }
-
+    LOG << "Socket: " << result->ai_family << " ai_socktype: " << result->ai_socktype << " ai_protocol:" << result->ai_protocol << std::endl;
     m_Handle = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (m_Handle == INVALID_SOCKET)
     {
-        printf("[Socket] Error at socket()\n");
+        LOG << "[Socket] Error at socket()" << std::endl;
+        SocketErrror();
         return 0;
     }
 
     iResult = bind(m_Handle, result->ai_addr, (int)result->ai_addrlen);
     if (iResult == SOCKET_ERROR)
     {
-        printf("[Socket] bind failed with error: %s\n", strerror(errno));
+        LOG << "[Socket] bind failed\n";
+        SocketErrror();
         freeaddrinfo(result);
         return 0;
     }
 
     if (listen(m_Handle, SOMAXCONN) == SOCKET_ERROR)
     {
-        printf("[Socket] Listen failed with error\n");
-
+        LOG << "[Socket] Listen failed with error" << std::endl;
+        SocketErrror();
         return 0;
     }
 
@@ -186,10 +206,10 @@ int Socket::Send(const std::string &buffer)
     // 		if (tmpres == -1)
     // 		{
     // #if __linux__
-    // 			printf("[Socket] Send Error: %s\n", strerror(errno));
+    // 			LOG <<"[Socket] Send Error: %s\n", strerror(errno));
     // #elif defined(WIN32)
     // 			int error = WSAGetLastError();
-    // 			printf("[Socket] Send Error: %d", error);
+    // 			LOG <<"[Socket] Send Error: %d", error);
     // #endif
 
     // 			return -1;
@@ -202,12 +222,38 @@ int Socket::Send(const std::string &buffer)
 
     if (nsend == -1)
     {
-        printf("[Socket] Send Error: %s\n", strerror(errno));
+        LOG <<"[Socket] Send error\n";
+        SocketErrror();
     }
     return nsend;
 }
 
-int Socket::RecvAll(std::string &data, int timeout)
+int Socket::SendAll(const std::string &buffer)
+{
+    TRACE;
+    int sent = 0;
+    int bufferLength = buffer.size();
+    const char* pBuffer = buffer.c_str();
+    LOG << "Total length: " << bufferLength << std::endl;
+    while (sent < bufferLength)
+    {
+        int nsend = send(m_Handle, pBuffer, bufferLength - sent, 0);
+        if (nsend < 0)
+        {
+            LOG <<"[Socket] Send error\n";
+            SocketErrror();
+            return -1;
+        } else
+        {
+            LOG << "Sent: " << sent << std::endl;
+        }
+        sent += nsend;
+    }
+
+    return sent;
+}
+
+int Socket::RecvAll(std::string &data, uint32_t timeout)
 {
     static char data2[1924 * 1024 * 10];
     memset(data2, 0, sizeof(data2));
@@ -242,7 +288,7 @@ int Socket::RecvAll(std::string &data, int timeout)
 #elif defined(WIN32)
         now = GetTickCount();
         //time elapsed in seconds
-        timediff = (now - begin) * 0.001f;
+        timediff = (DWORD)((now - begin) * 0.001f);
 #endif
 
         //if you got some data, then break after timeout
@@ -269,7 +315,7 @@ int Socket::RecvAll(std::string &data, int timeout)
         else
         {
             total_size += size_recv;
-            //printf("%s", chunk);
+            //LOG <<"%s", chunk);
             //data2.append(chunk);
             memcpy(p, chunk, size_recv);
             p += size_recv;
@@ -340,6 +386,7 @@ void Socket::EnableNonblock()
     ioctlsocket(m_Handle, FIONBIO, &iMode);
 #endif
 }
+
 Socket::Socket(int handle) : m_Handle(handle)
 {
 }
@@ -347,4 +394,27 @@ Socket::Socket(int handle) : m_Handle(handle)
 int Socket::GetHandle()
 {
     return m_Handle;
+}
+
+void Socket::InitSocket()
+{
+#ifdef WIN32
+    static WSADATA wsaData;
+    int iResult;
+
+    // Initialize Winsock
+    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (iResult != 0)
+    {
+        LOG << "WSAStartup failed: " << iResult;
+        return;
+    }
+#endif
+}
+
+void Socket::DestroySocket()
+{
+#ifdef WIN32
+    WSACleanup();
+#endif
 }
