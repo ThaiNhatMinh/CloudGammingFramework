@@ -51,6 +51,9 @@ TD3D9DevicePresent pD3D9DevicePresent = NULL;
 TD3D9SwapChainPresent pD3D9SwapChainPresent = NULL;
 TD3D9GetSwapChain pD3D9GetSwapChain = NULL;
 IDirect3DSwapChain9 *pSwapChain = NULL;
+static IDirect3DSurface9 *resolvedSurface = NULL;
+static IDirect3DSurface9 *offscreenSurface = NULL;
+
 extern RenderStream* streamer;
 void CaptureFrame(IDirect3DSwapChain9* swapchain);
 
@@ -116,7 +119,7 @@ HRESULT STDMETHODCALLTYPE hook_D3D9GetSwapChain(
     {
         D3DSURFACE_DESC desc;
         renderSurface->GetDesc(&desc);
-        streamer->SetFrameSize(desc.Width, desc.Width);
+        streamer->SetFrameSize(desc.Width, desc.Height);
     }
 
     ImGui_ImplDX9_Init(This);
@@ -185,15 +188,11 @@ DllExport IDirect3D9 * WINAPI hook_Direct3DCreate9(UINT SDKVersion)
     return pDirect3D9;
 }
 
-static IDirect3DSurface9 *resolvedSurface = NULL;
-static IDirect3DSurface9 *offscreenSurface = NULL;
-
 void CaptureFrame(IDirect3DSwapChain9* swapchain)
 {
-    return;
-    static bool called = false;
-    if (called) return;
-    called = true;
+    // static bool called = false;
+    // if (called) return;
+    // called = true;
     IDirect3DDevice9* pDevice;
     IDirect3DSurface9 *renderSurface, *oldRenderSurface;
     D3DLOCKED_RECT lockedRect;
@@ -233,9 +232,9 @@ void CaptureFrame(IDirect3DSwapChain9* swapchain)
         oldRenderSurface = renderSurface;
         renderSurface = resolvedSurface;
     }
-    LOG << "desc.Format: " << desc.Format << std::endl;
-    LOG << "W: " << desc.Width << " H: " << desc.Height << std::endl;
-    LOG << "Multisample: " << desc.MultiSampleType << std::endl;
+    // LOG << "desc.Format: " << desc.Format << std::endl;
+    // LOG << "W: " << desc.Width << " H: " << desc.Height << std::endl;
+    // LOG << "Multisample: " << desc.MultiSampleType << std::endl;
     // create offline surface in system memory
     if(offscreenSurface == NULL) {
         hr = pDevice->CreateOffscreenPlainSurface(desc.Width, desc.Height,
@@ -270,9 +269,10 @@ void CaptureFrame(IDirect3DSwapChain9* swapchain)
         LOG << "LockRect failed.\n";
         return;
     }
-    LOG << "lockedRect: " << lockedRect.Pitch << std::endl;
-    void Convertxrgb2rgb(char* src, char* dst, int width, int height);
-    Convertxrgb2rgb((char*)lockedRect.pBits, streamer->GetBuffer(),  desc.Width, desc.Height);
+    // LOG << "lockedRect: " << lockedRect.Pitch << std::endl;
+    // void Convertxrgb2rgb(char* src, char* dst, int width, int height);
+    memcpy(streamer->GetBuffer(), lockedRect.pBits, desc.Width * desc.Height * 4);
+    // Convertxrgb2rgb((char*)lockedRect.pBits, streamer->GetBuffer(), desc.Width, desc.Height);
     streamer->SendFrame();
     hr = offscreenSurface->UnlockRect();
 }

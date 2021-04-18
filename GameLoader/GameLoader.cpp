@@ -62,9 +62,9 @@ int main(int argc, char** argv)
     }
 
     // Wait until child process exits.
-    WaitForSingleObject(processInformation.hProcess, INFINITE);
+    // WaitForSingleObject(processInformation.hProcess, INFINITE);
 
     // Close process and thread handles. 
-    CloseHandle(processInformation.hProcess);
-    CloseHandle(processInformation.hThread);
+    // CloseHandle(processInformation.hProcess);
+    // CloseHandle(processInformation.hThread);
 }

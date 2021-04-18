@@ -26,9 +26,12 @@ public:
     void HandleEvent();
     int ShouldClose();
     void SwapBuffer();
+    void EnableVsync(bool enable);
     void Resize(uint32_t width, uint32_t height);
     void SetName(const std::string& name);
     void OnResize(int width, int height);
+    void GetSize(uint32_t* width, uint32_t* height);
+    void MakeContext();
     GLFWwindow* GetGlfw();
 
 private:

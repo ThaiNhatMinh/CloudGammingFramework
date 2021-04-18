@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <WinSock2.h>
 #include <thread>
+#include <mutex>
 #include <condition_variable>
 
 #include "Timer.h"
@@ -11,7 +12,6 @@
 class RenderStream
 {
 public:
-    const int BYTE_PER_PIXEL = 3;
     const int PORT = 5678;
 private:
     Timer m_timer;
@@ -25,6 +25,9 @@ private:
     uint32_t m_Width;
     uint32_t m_Height;
     bool m_serverRunning;
+    std::mutex m_mutex;
+    std::condition_variable m_condVar;
+
 public:
     RenderStream();
     ~RenderStream();

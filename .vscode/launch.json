@@ -5,12 +5,25 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Launch",
+            "name": "Client",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Client/Debug/Client.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Server",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/GameLoader.exe",
             "args": [
                 "D:\\Study\\CloudGaming\\CloudGamming\\build\\Debug\\Hook.dll",
+                // "D:\\Code\\Universal-ImGui-D3D11-Hook\\Debug\\Universal-ImGui-D11-Hook.dll",
+                // "D:\\Code\\DirectX11Hook\\Debug\\DirectX11Hook.dll",
                 // "D:\\Study\\CloudGaming\\DirectXSDK\\Samples\\C++\\Direct3D11\\Bin\\x64\\SimpleSample11.exe"
                 // "D:\\Game\\SteamLibrary\\steamapps\\common\\Limbo\\limbo.exe"
                 // "D:\\Game\\Overcooked\\Overcooked.exe"
@@ -19,7 +32,16 @@
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "console": "externalTerminal"
+            "console": "integratedTerminal"
         }
-    ]
+    ],
+    "compounds": [
+        {
+            "name": "Server/Client",
+            "configurations": [
+                "Server",
+                "Client"
+            ],
+        }
+      ]
 }

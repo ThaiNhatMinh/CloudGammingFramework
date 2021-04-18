@@ -1,3 +1,4 @@
+#include <functional>
 #include "StreamProtocol.hh"
 #include "Logger.hh"
 #include "RenderStream.hh"
@@ -41,6 +42,10 @@ LRESULT RenderStream::hWndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
     if (uMsg == WM_KEYUP && wParam == VK_INSERT)
     {
         m_ShowMenu = !m_ShowMenu;
+    }
+    if (uMsg == WM_KEYUP && wParam == VK_DELETE)
+    {
+        SendFrame();
     }
 
     if (m_ShowMenu)
@@ -93,28 +98,43 @@ void RenderStream::SetFrameSize(std::size_t w, std::size_t h)
 
 char* RenderStream::GetBuffer()
 {
-    TRACE;
     return m_pBuffer;
 }
 
 void RenderStream::SendFrame()
 {
+    std::lock_guard<std::mutex> guard(m_mutex);
+    m_condVar.notify_one();
 }
 
 void RenderStream::ServerThread()
 {
     TRACE;
-    while (m_serverRunning)
+    struct sockaddr_in remoteaddr;
+    while (true)
     {
-        struct sockaddr_in remoteaddr;
+        LOG << "Waiting for client...\n";
         Socket cl = m_server.Accept(&remoteaddr);
         if (cl.IsValid())
         {
             LOG << "Accecpt client from: " << remoteaddr.sin_port << std::endl;
             m_client = std::move(cl);
             std::string cmd = BuildSetupCommand(m_Width, m_Height, "ASDSD");
-            LOG << cmd << std::endl;
             LOG << "Sent SETUP: " << m_client.SendAll(cmd) << std::endl;
+        }
+        while (m_serverRunning)
+        {
+            std::unique_lock<std::mutex> mlock(m_mutex);
+            LOG << "Start waiting...\n";
+            m_condVar.wait(mlock);
+            LOG << "Start sending...\n";
+            std::string buffer = BuildFrameCommand(m_pBuffer, m_Width * m_Height * BYTE_PER_PIXEL + 1);
+            if (m_client.IsValid())
+            {
+                int sent = m_client.SendAll(buffer);
+                if (sent == -1)
+                    break;
+            }
         }
     }
 }

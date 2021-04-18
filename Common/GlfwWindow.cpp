@@ -13,13 +13,12 @@ Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     m_pWindow = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
-    glfwMakeContextCurrent(m_pWindow);
+    MakeContext();
     glfwSetWindowAttrib(m_pWindow, GLFW_RESIZABLE, GLFW_FALSE);
     glfwSetWindowUserPointer(m_pWindow, this);
     glfwSetFramebufferSizeCallback(m_pWindow, FramebufferResizeCallback);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwSwapInterval(1); // Enable vsync
     int display_w, display_h;
     glfwGetFramebufferSize(m_pWindow, &display_w, &display_h);
     LOG << "Frame size: " << display_w << "x" << display_h << std::endl;
@@ -51,11 +50,22 @@ void Window::HandleEvent()
     glfwPollEvents();
 }
 
+void Window::EnableVsync(bool enable)
+{
+    glfwSwapInterval(enable); // Enable vsync
+}
+
 void Window::Resize(uint32_t width, uint32_t height)
 {
     m_width = width;
     m_height = height;
     glfwSetWindowSize(m_pWindow, m_width, m_height);
+}
+
+void Window::GetSize(uint32_t* width, uint32_t* height)
+{
+    *width = m_width;
+    *height = m_height;
 }
 
 void Window::SetName(const std::string& name)
@@ -72,4 +82,9 @@ GLFWwindow* Window::GetGlfw()
 void Window::SwapBuffer()
 {
     glfwSwapBuffers(m_pWindow);
+}
+
+void Window::MakeContext()
+{
+    glfwMakeContextCurrent(m_pWindow);
 }

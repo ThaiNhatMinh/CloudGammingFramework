@@ -13,4 +13,20 @@ enum Command
     FRAME
 };
 
+struct SetupCommand
+{
+    int width;
+    int height;
+    std::string name;
+};
+struct FrameCommand
+{
+    std::string frame;
+};
+const int BYTE_PER_PIXEL = 4;
+
 std::string BuildSetupCommand(uint32_t w, uint32_t h, const std::string& title);
+SetupCommand ParseSetupCommand(const std::string& buffer);
+
+std::string BuildFrameCommand(void* pData, std::size_t length);
+FrameCommand ParseFrameCommand(const std::string& buffer, std::size_t frameSize);
