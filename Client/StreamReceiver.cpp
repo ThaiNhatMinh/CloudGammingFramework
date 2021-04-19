@@ -109,6 +109,14 @@ void StreamReceiver::Streamming::Update(const FrameCommand& frame)
     m_update = true;
 }
 
+void StreamReceiver::Streamming::OnWinMove(int x, int y)
+{
+    while (!m_frames.empty())
+    {
+        m_frames.pop();
+    }
+}
+
 bool StreamReceiver::ConnectTo(const std::string& ip, int port)
 {
     if (m_socket.Connect(ip, port))
@@ -136,6 +144,10 @@ StreamReceiver::StreamReceiver(Window* pWindow):m_pWindow(pWindow)
 
 StreamReceiver::~StreamReceiver()
 {
+    if (m_thread.joinable())
+    {
+        m_thread.join();
+    }
 }
 
 void StreamReceiver::Draw()
@@ -165,6 +177,11 @@ void StreamReceiver::Receive()
     auto pStream = new Streamming(this, m_size);
     m_pCurrentState.reset(pStream);
     std::size_t frameSize = setup.width * setup.height * BYTE_PER_PIXEL;
+    m_pWindow->SetWinMoveCallback([pStream](int x, int y)
+    {
+        pStream->OnWinMove(x, y);
+    });
+
     while(true)
     {
         std::string tmp;

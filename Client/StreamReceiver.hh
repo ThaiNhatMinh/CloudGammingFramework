@@ -47,6 +47,7 @@ private:
         Streamming(StreamReceiver* owner, V2uInt32 size);
         void Draw();
         void Update(const FrameCommand& frame);
+        void OnWinMove(int x, int y);
     private:
         void Update();
         GLuint CreateTexture();

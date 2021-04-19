@@ -17,6 +17,7 @@ Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width
     glfwSetWindowAttrib(m_pWindow, GLFW_RESIZABLE, GLFW_FALSE);
     glfwSetWindowUserPointer(m_pWindow, this);
     glfwSetFramebufferSizeCallback(m_pWindow, FramebufferResizeCallback);
+    glfwSetWindowPosCallback(m_pWindow, WindowMoveCallback);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     int display_w, display_h;
@@ -40,9 +41,19 @@ void Window::OnResize(int width, int height)
     m_bIsWindowResize = true;
 }
 
+void Window::OnMove(int x, int y)
+{
+    if (m_moveCallback) m_moveCallback(x, y);
+}
+
 void Window::FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
     pWindow->OnResize(width, height);
+}
+
+void Window::WindowMoveCallback(GLFWwindow* window, int x, int y) {
+    static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    pWindow->OnMove(x, y);
 }
 
 void Window::HandleEvent()
@@ -87,4 +98,9 @@ void Window::SwapBuffer()
 void Window::MakeContext()
 {
     glfwMakeContextCurrent(m_pWindow);
+}
+
+void Window::SetWinMoveCallback(std::function<void(int, int)> callback)
+{
+    m_moveCallback = callback;
 }

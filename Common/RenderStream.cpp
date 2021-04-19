@@ -125,9 +125,7 @@ void RenderStream::ServerThread()
         while (m_serverRunning)
         {
             std::unique_lock<std::mutex> mlock(m_mutex);
-            LOG << "Start waiting...\n";
             m_condVar.wait(mlock);
-            LOG << "Start sending...\n";
             std::string buffer = BuildFrameCommand(m_pBuffer, m_Width * m_Height * BYTE_PER_PIXEL + 1);
             if (m_client.IsValid())
             {
