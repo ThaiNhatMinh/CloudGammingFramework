@@ -133,7 +133,9 @@ void RenderStream::ServerThread()
             {
                 int sent = m_client.SendAll(buffer);
                 if (sent == -1)
+                {
                     break;
+                }
             }
         }
     }

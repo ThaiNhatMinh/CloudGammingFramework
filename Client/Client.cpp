@@ -8,6 +8,7 @@ int main()
 {
     Socket::InitSocket();
     Window window(500, 500, "AAA");
+    window.EnableVsync(false);
     StreamReceiver stream(&window);
 
     // Setup Dear ImGui context

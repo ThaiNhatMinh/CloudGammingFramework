@@ -23,7 +23,7 @@ struct FrameCommand
 {
     std::string frame;
 };
-const int BYTE_PER_PIXEL = 4;
+const int BYTE_PER_PIXEL = 3;
 
 std::string BuildSetupCommand(uint32_t w, uint32_t h, const std::string& title);
 SetupCommand ParseSetupCommand(const std::string& buffer);

@@ -4,6 +4,7 @@
 #include "Logger.hh"
 #include "Module.hh"
 #include "RenderStream.hh"
+#include "StreamProtocol.hh"
 #include "Timer.h"
 #include "imgui/imgui_impl_dx9.h"
 #include "imgui/imgui_impl_win32.h"
@@ -270,9 +271,9 @@ void CaptureFrame(IDirect3DSwapChain9* swapchain)
         return;
     }
     // LOG << "lockedRect: " << lockedRect.Pitch << std::endl;
-    // void Convertxrgb2rgb(char* src, char* dst, int width, int height);
-    memcpy(streamer->GetBuffer(), lockedRect.pBits, desc.Width * desc.Height * 4);
-    // Convertxrgb2rgb((char*)lockedRect.pBits, streamer->GetBuffer(), desc.Width, desc.Height);
+    void Convertxrgb2rgb(char* src, char* dst, int width, int height);
+    // memcpy(streamer->GetBuffer(), lockedRect.pBits, desc.Width * desc.Height * BYTE_PER_PIXEL);
+    Convertxrgb2rgb((char*)lockedRect.pBits, streamer->GetBuffer(), desc.Width, desc.Height);
     streamer->SendFrame();
     hr = offscreenSurface->UnlockRect();
 }
@@ -284,9 +285,9 @@ void Convertxrgb2rgb(char* src, char* dst, int width, int height)
     {
         for (int w = 0; w < width; w++, src += 4, dst += 3)
         {
-            dst[0] = src[0];
+            dst[0] = src[2];
             dst[1] = src[1];
-            dst[2] = src[2];
+            dst[2] = src[0];
         }
     }
 }

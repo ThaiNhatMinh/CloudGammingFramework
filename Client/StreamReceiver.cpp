@@ -45,6 +45,7 @@ void StreamReceiver::Streamming::Draw()
 {
     ImGui::Begin("Hello, world!");
     ImGui::Text("Queue size %d", m_frames.size());
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     if (m_update)
     {
         Update();
@@ -54,16 +55,16 @@ void StreamReceiver::Streamming::Draw()
     glBindTexture(GL_TEXTURE_2D, m_texture);
     glBegin(GL_TRIANGLE_STRIP);
 
-    glTexCoord2f(0.0, 1.0);
+    glTexCoord2f(0.0, 0.0);
     glVertex2f(-1.0f, 1.0f); //vertex 1
 
-    glTexCoord2f(0.0, 0.0);
+    glTexCoord2f(0.0, 1.0);
     glVertex2f(-1.0f, -1.0f); //vertex 2
 
-    glTexCoord2f(1.0, 1.0);
+    glTexCoord2f(1.0, 0.0);
     glVertex2f(1.0f, 1.0f); //vertex 3
 
-    glTexCoord2f(1.0, 0.0);
+    glTexCoord2f(1.0, 1.0);
     glVertex2f(1.0f, -1.0f); //vertex 4
     glEnd();
 }
@@ -79,11 +80,7 @@ GLuint StreamReceiver::Streamming::CreateTexture()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // int w, h, comp;
-    // auto data = stbi_load("AAA.bmp",  &w, &h, &comp, 4);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    // stbi_image_free(data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  m_size.x, m_size.y, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     return textId;
 }
 
@@ -94,16 +91,14 @@ void StreamReceiver::Streamming::Update()
         m_texture = CreateTexture();
     }
     glBindTexture(GL_TEXTURE_2D, m_texture);
-    // int w, h, comp;
-    // auto data = stbi_load("AAA.jpg",  &w, &h, &comp, 4);
-    // LOG << " " << w << " " << h << " " << comp <<  " " << data << std::endl;
-    // glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    // std::unique_lock<std::mutex> lock(m_frameLock);
+    if (m_frames.empty())
+    {
+        m_update = false;
+        return;
+    }
     FrameCommand frame = m_frames.front();
     m_frames.pop();
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_size.x, m_size.y, GL_RGBA, GL_UNSIGNED_BYTE, frame.frame.data());
-    // stbi_write_bmp("AAA.bmp", m_size.x, m_size.y, BYTE_PER_PIXEL, m_frame.frame.data());
-    // stbi_image_free(data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_size.x, m_size.y, GL_RGB, GL_UNSIGNED_BYTE, frame.frame.data());
     m_update = false;
 }
 
@@ -111,7 +106,6 @@ void StreamReceiver::Streamming::Update(const FrameCommand& frame)
 {
     // std::unique_lock<std::mutex> lock(m_frameLock);
     m_frames.push(frame);
-    // LOG << "Push frame, size: " << m_frames.size() << std::endl;
     m_update = true;
 }
 
@@ -119,7 +113,6 @@ bool StreamReceiver::ConnectTo(const std::string& ip, int port)
 {
     if (m_socket.Connect(ip, port))
     {
-        m_pCurrentState.reset();
         m_thread = std::thread(&StreamReceiver::Receive, this);
         return true;
     }
@@ -139,7 +132,6 @@ StreamReceiver::StreamReceiver(Window* pWindow):m_pWindow(pWindow)
     }
     m_pWindow->GetSize(&m_size.x, &m_size.y);
     m_pCurrentState.reset(new HomeState(this));
-    // m_pCurrentState.reset(new Streamming(this, m_size));
 }
 
 StreamReceiver::~StreamReceiver()
@@ -172,6 +164,7 @@ void StreamReceiver::Receive()
     buffer.clear();
     auto pStream = new Streamming(this, m_size);
     m_pCurrentState.reset(pStream);
+    std::size_t frameSize = setup.width * setup.height * BYTE_PER_PIXEL;
     while(true)
     {
         std::string tmp;
@@ -182,11 +175,11 @@ void StreamReceiver::Receive()
             return;
         }
         buffer.append(tmp);
-        if (buffer.size() >= setup.width * setup.height * BYTE_PER_PIXEL + 1)
+        if (buffer.size() >= frameSize + 1)
         {
-            FrameCommand frame = ParseFrameCommand(buffer, setup.width * setup.height * BYTE_PER_PIXEL);
+            FrameCommand frame = ParseFrameCommand(buffer, frameSize);
             pStream->Update(frame);
-            buffer = buffer.substr(setup.width * setup.height * BYTE_PER_PIXEL + 1);
+            buffer = buffer.substr(frameSize + 1);
         }
     }
 }
