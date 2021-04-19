@@ -230,11 +230,9 @@ int Socket::Send(const std::string &buffer)
 
 int Socket::SendAll(const std::string &buffer)
 {
-    TRACE;
     int sent = 0;
     int bufferLength = buffer.size();
     const char* pBuffer = buffer.c_str();
-    LOG << "Total length: " << bufferLength << std::endl;
     while (sent < bufferLength)
     {
         int nsend = send(m_Handle, pBuffer, bufferLength - sent, 0);
@@ -243,9 +241,6 @@ int Socket::SendAll(const std::string &buffer)
             LOG <<"[Socket] Send error\n";
             SocketErrror();
             return -1;
-        } else
-        {
-            LOG << "Sent: " << sent << std::endl;
         }
         sent += nsend;
     }
