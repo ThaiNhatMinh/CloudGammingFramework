@@ -50,8 +50,10 @@ int main(int argc, char** argv)
     STARTUPINFO startupInfo = { sizeof(startupInfo) };
     memset(&startupInfo, 0, sizeof(STARTUPINFO));
     startupInfo.cb = sizeof(STARTUPINFO);
+    // startupInfo.wShowWindow = SW_HIDE;
+    // startupInfo.dwFlags = STARTF_USESHOWWINDOW;
     PROCESS_INFORMATION processInformation;
-	bool ret = DetourCreateProcessWithDlls(NULL, program,
+    bool ret = DetourCreateProcessWithDlls(NULL, program,
         NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, NULL, directory.c_str(),
         &startupInfo, &processInformation, 1, DLLs, NULL);
     if (!ret) {

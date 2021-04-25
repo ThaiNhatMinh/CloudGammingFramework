@@ -10,11 +10,11 @@ int main()
     Window window(500, 500, "AAA");
     window.EnableVsync(false);
     StreamReceiver stream(&window);
-
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO &io = ImGui::GetIO();
+    (void)io;
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
@@ -24,7 +24,8 @@ int main()
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window.GetGlfw(), true);
     ImGui_ImplOpenGL3_Init();
-    while(!window.ShouldClose()) {
+    while (!window.ShouldClose())
+    {
         window.HandleEvent();
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();

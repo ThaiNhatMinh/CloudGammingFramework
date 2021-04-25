@@ -330,13 +330,16 @@ int Socket::RecvAll(std::string &data, uint32_t timeout)
 
 int Socket::Recv(std::string &data)
 {
-
-    int size_recv;
     char chunk[BUFSIZ];
-    size_recv = recv(m_Handle, chunk, BUFSIZ, 0);
+    int size_recv = recv(m_Handle, chunk, BUFSIZ, 0);
     if (size_recv > 0)
+    {
         data.assign(chunk, size_recv);
-
+    }
+    else if (size_recv < 0)
+    {
+        SocketErrror();
+    }
     return size_recv;
 }
 

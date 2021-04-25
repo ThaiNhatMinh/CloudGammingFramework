@@ -1,4 +1,6 @@
 #include "pch.h"
+#include <vector>
+
 #include "DllMain.h"
 #include "DirectX9.hh"
 #include "DirectX10.hh"
@@ -19,6 +21,43 @@ void ConsoleSetup()
     freopen("CONIN$", "r", stdin);
 }
 
+typedef HRESULT (STDMETHODCALLTYPE *TGetRawInputData) (
+	HRAWINPUT hRawInput,
+	UINT uiCommand,
+	LPVOID pData,
+	PUINT pcbSize,
+	UINT cbSizeHeader
+);
+TGetRawInputData pGetRawInputData = NULL;
+// Hook function that replaces the GetRawInputData API
+DllExport HRESULT __stdcall hook_GetRawInputData(
+		HRAWINPUT hRawInput,
+		UINT uiCommand,
+		LPVOID pData,
+		PUINT pcbSize,
+		UINT cbSizeHeader
+	)
+{
+    TRACE;
+    HRESULT hr;
+    hr = pGetRawInputData(hRawInput, uiCommand, pData, pcbSize, cbSizeHeader);
+    return hr;
+}
+
+void GetRawInputDevice(bool is_mame_game);
+
+void HookInput()
+{
+    HMODULE hMod = CheckModule("user32.dll");
+    if (hMod == NULL)
+        return;
+    pGetRawInputData = (TGetRawInputData)
+        GetProcAddress(hMod, "GetRawInputData");
+    DetourTransactionBegin();
+    DetourUpdateThread(GetCurrentThread());
+    DetourAttach(&(LPVOID &)pGetRawInputData, hook_GetRawInputData);
+    DetourTransactionCommit();
+}
 
 void MainThread(void* pHandle)
 {
@@ -30,6 +69,7 @@ void MainThread(void* pHandle)
     HookD3D9();
     HookD3D10();
     HookOpenGL();
+    HookInput();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)

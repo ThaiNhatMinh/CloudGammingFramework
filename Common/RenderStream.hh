@@ -16,12 +16,15 @@ public:
 private:
     Timer m_timer;
     Socket m_server;
+    Socket m_serverControl;
     Socket m_client;
+    Socket m_clientControl;
     HWND m_hwnd;
     WNDPROC m_OriginalWndProcHandler = nullptr;
     bool m_ShowMenu;
     char* m_pBuffer;
     std::thread m_thread;
+    std::thread m_threadControl;
     uint32_t m_Width;
     uint32_t m_Height;
     bool m_serverRunning;
@@ -37,7 +40,8 @@ public:
     char* GetBuffer();
     void SendFrame();
     LRESULT hWndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
-    void ServerThread();
 
 private:
+    void ServerThread();
+    void ControlThread();
 };

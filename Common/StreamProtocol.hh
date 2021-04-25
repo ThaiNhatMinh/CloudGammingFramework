@@ -10,7 +10,19 @@ enum Command
     /**
      * Send actualy frame
      */
-    FRAME
+    FRAME,
+
+    /**
+     * Send control from client to server
+     */
+    CONTROL,
+};
+
+enum ControlType
+{
+    KEYBOARD,
+    MOUSEMOVE,
+    MOUSECLICK,
 };
 
 struct SetupCommand

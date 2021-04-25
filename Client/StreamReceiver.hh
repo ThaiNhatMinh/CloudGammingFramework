@@ -56,14 +56,18 @@ private:
 private:
     V2uInt32 m_size;
     Socket m_socket;
+    Socket m_socketControl;
     Window* m_pWindow;
     std::unique_ptr<State> m_pCurrentState;
     std::thread m_thread;
+    std::string m_ip;
+    uint32_t m_port;
 public:
     StreamReceiver(Window* pWindow);
     ~StreamReceiver();
     void Draw();
     bool ConnectTo(const std::string& ip, int port);
+    void SendControl(const std::string& buffer);
 
 private:
     void Receive();

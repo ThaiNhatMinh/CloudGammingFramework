@@ -18,6 +18,9 @@ private:
     uint32_t m_height;
     std::string m_name;
     std::function<void(int, int)> m_moveCallback;
+    std::function<void(int, int, int, int)> m_keyCallback;
+    std::function<void(int, int, int)> m_mouseCallback;
+    std::function<void(float, float)> m_mouseMoveCallback;
     friend class Vulkan;
 
 public:
@@ -35,13 +38,20 @@ public:
     void MakeContext();
     GLFWwindow* GetGlfw();
     void SetWinMoveCallback(std::function<void(int, int)> callback);
+    void SetKeyCallback(std::function<void(int, int, int, int)> callback);
+    void SetMouseCallback(std::function<void(int, int, int)> callback);
+    void SetMouseMoveCallback(std::function<void(float, float)> callback);
 
 protected:
     void OnResize(int width, int height);
     void OnMove(int x, int y);
-
+    void OnKey(int key, int scancode, int action, int mods);
+    void OnMouse(int button, int action, int mods);
+    void OnMouseMove(double x, double y);
 private:
     static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void WindowMoveCallback(GLFWwindow* window, int x, int y);
-
+    static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+    static void MouseCallback(GLFWwindow*,int button, int action, int mods);
+    static void CursorPosCallback(GLFWwindow*, double xpos, double ypos);
 };

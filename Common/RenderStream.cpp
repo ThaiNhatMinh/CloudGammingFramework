@@ -1,10 +1,14 @@
+#include <windowsx.h>
+
 #include <functional>
 #include "StreamProtocol.hh"
 #include "Logger.hh"
 #include "RenderStream.hh"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
+#include "interception.h"
 
+static InterceptionContext context;
 RenderStream* instance;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -19,15 +23,22 @@ RenderStream::RenderStream():m_pBuffer(nullptr), m_ShowMenu(false)
     m_serverRunning = true;
     m_thread = std::thread(&RenderStream::ServerThread, this);
     instance = this;
+    context = interception_create_context();
 }
 
 RenderStream::~RenderStream()
 {
     m_serverRunning = false;
+    if (m_thread.joinable()) m_thread.join();
+    if (m_threadControl.joinable()) m_threadControl.join();
 }
 
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    if (uMsg == WM_KEYUP && wParam == VK_INSERT)
+    {
+        LOG << "HWND: " << hWnd << std::endl;
+    }
     return instance->hWndProc(uMsg, wParam, lParam);
 }
 
@@ -42,10 +53,6 @@ LRESULT RenderStream::hWndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
     if (uMsg == WM_KEYUP && wParam == VK_INSERT)
     {
         m_ShowMenu = !m_ShowMenu;
-    }
-    if (uMsg == WM_KEYUP && wParam == VK_DELETE)
-    {
-        SendFrame();
     }
 
     if (m_ShowMenu)
@@ -117,6 +124,14 @@ void RenderStream::ServerThread()
         Socket cl = m_server.Accept(&remoteaddr);
         if (cl.IsValid())
         {
+            if (!m_serverControl.Listen(PORT + 1))
+            {
+                LOG << "Failed to listen on port: " << PORT + 1 << std::endl;
+                continue;
+            } else
+            {
+                m_threadControl = std::thread(&RenderStream::ControlThread, this);
+            }
             LOG << "Accecpt client from: " << remoteaddr.sin_port << std::endl;
             m_client = std::move(cl);
             std::string cmd = BuildSetupCommand(m_Width, m_Height, "ASDSD");
@@ -137,4 +152,59 @@ void RenderStream::ServerThread()
             }
         }
     }
+}
+InterceptionDevice mouseD = INTERCEPTION_MOUSE(1);
+
+void RenderStream::ControlThread()
+{
+    TRACE;
+    std::string buffer;
+    struct sockaddr_in remoteaddr;
+    Socket cl = m_serverControl.Accept(&remoteaddr);
+    m_clientControl = std::move(cl);
+    LOG << "Accept client control...\n";
+    while (true)
+    {
+        std::string tmp;
+        int nrecv = m_clientControl.Recv(tmp);
+        // buffer.append(tmp);
+        if (nrecv < 0) continue;
+        if (tmp[0] != Command::CONTROL)
+        {
+            LOG << "Invalid command\n";
+            continue;
+        }
+        if (tmp[1] == ControlType::MOUSEMOVE)
+        {
+            int xpos, ypos;
+            memcpy(&xpos, &tmp[2], sizeof(int));
+            memcpy(&ypos, &tmp[2] + sizeof(int), sizeof(int));
+            // SendMessage(m_hwnd, WM_MOUSEMOVE, 128, MAKELPARAM(xpos, ypos));
+            // if (PostMessage(m_hwnd, WM_MOUSEMOVE, 0, MAKELPARAM(xpos, ypos)) == 0)
+            // {
+            //     LOG << "Error: " <<  GetLastError() << std::endl;
+            // }
+            RECT rect;
+            GetWindowRect(m_hwnd, &rect);
+            LOG << "Move: " << rect.bottom << " " << rect.top << " " << rect.left << " " << rect.right << std::endl;
+            // INPUT mouse;
+            // mouse.type = INPUT_MOUSE;
+            // mouse.mi.dx = rect.left + xpos;
+            // mouse.mi.dy = rect.top + ypos;
+            // mouse.mi.mouseData = 0;
+            // mouse.mi.time = 0;
+            // mouse.mi.dwExtraInfo = 0;
+            // mouse.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
+            // SendInput(1, &mouse, sizeof(INPUT));
+            InterceptionMouseStroke mouse;
+            mouse.state = 0;
+            mouse.rolling = 0;
+            mouse.information = 0;
+            mouse.flags = INTERCEPTION_MOUSE_MOVE_ABSOLUTE | INTERCEPTION_MOUSE_VIRTUAL_DESKTOP;
+            mouse.x = rect.left + xpos;
+            mouse.y = rect.top + ypos;
+            interception_send(context, mouseD, (InterceptionStroke*)&mouse, 1);
+        }
+    }
+    TRACE;
 }

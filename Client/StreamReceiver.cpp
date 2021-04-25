@@ -121,6 +121,8 @@ bool StreamReceiver::ConnectTo(const std::string& ip, int port)
 {
     if (m_socket.Connect(ip, port))
     {
+        m_ip = ip;
+        m_port = port;
         m_thread = std::thread(&StreamReceiver::Receive, this);
         return true;
     }
@@ -177,9 +179,28 @@ void StreamReceiver::Receive()
     auto pStream = new Streamming(this, m_size);
     m_pCurrentState.reset(pStream);
     std::size_t frameSize = setup.width * setup.height * BYTE_PER_PIXEL;
+
+    if (!m_socketControl.Connect(m_ip, m_port + 1))
+    {
+        LOG << "Failed to connect control port";
+    }
+
     m_pWindow->SetWinMoveCallback([pStream](int x, int y)
     {
         pStream->OnWinMove(x, y);
+    });
+
+    m_pWindow->SetMouseMoveCallback([this](float xpos, float ypos)
+    {
+        std::string buffer;
+        buffer.resize(2 + sizeof(int) * 2);
+        buffer[0] = Command::CONTROL;
+        buffer[1] = ControlType::MOUSEMOVE;
+        int ix = (int)xpos;
+        int iy = (int)ypos;
+        memcpy(&buffer[2], &ix, sizeof(ix));
+        memcpy(&buffer[2 + sizeof(ix)], &iy, sizeof(iy));
+        this->SendControl(buffer);
     });
 
     while(true)
@@ -199,4 +220,9 @@ void StreamReceiver::Receive()
             buffer = buffer.substr(frameSize + 1);
         }
     }
+}
+
+void StreamReceiver::SendControl(const std::string& buffer)
+{
+    int sent = m_socketControl.SendAll(buffer);
 }
