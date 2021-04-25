@@ -1,8 +1,8 @@
 # CloudGamming
 
-This project is an prototype for cloud gaming service.
+This project is aim to create a framework that support cloud gamming.
 
 ## Reference
 
-1. adas
-2. 3232
+1. <https://github.com/alanzw/sharerender>
+2. <https://github.com/chunying/gaminganywhere>
