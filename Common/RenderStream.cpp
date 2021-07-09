@@ -6,9 +6,7 @@
 #include "RenderStream.hh"
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_win32.h"
-#include "interception.h"
 
-static InterceptionContext context;
 RenderStream* instance;
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -23,7 +21,6 @@ RenderStream::RenderStream():m_pBuffer(nullptr), m_ShowMenu(false)
     m_serverRunning = true;
     m_thread = std::thread(&RenderStream::ServerThread, this);
     instance = this;
-    context = interception_create_context();
 }
 
 RenderStream::~RenderStream()
@@ -153,7 +150,6 @@ void RenderStream::ServerThread()
         }
     }
 }
-InterceptionDevice mouseD = INTERCEPTION_MOUSE(1);
 
 void RenderStream::ControlThread()
 {
@@ -196,14 +192,6 @@ void RenderStream::ControlThread()
             // mouse.mi.dwExtraInfo = 0;
             // mouse.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
             // SendInput(1, &mouse, sizeof(INPUT));
-            InterceptionMouseStroke mouse;
-            mouse.state = 0;
-            mouse.rolling = 0;
-            mouse.information = 0;
-            mouse.flags = INTERCEPTION_MOUSE_MOVE_ABSOLUTE | INTERCEPTION_MOUSE_VIRTUAL_DESKTOP;
-            mouse.x = rect.left + xpos;
-            mouse.y = rect.top + ypos;
-            interception_send(context, mouseD, (InterceptionStroke*)&mouse, 1);
         }
     }
     TRACE;
