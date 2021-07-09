@@ -56,6 +56,9 @@
         "condition_variable": "cpp",
         "functional": "cpp",
         "unordered_map": "cpp",
-        "atomic": "cpp"
+        "atomic": "cpp",
+        "queue": "cpp",
+        "algorithm": "cpp",
+        "deque": "cpp"
     }
 }
