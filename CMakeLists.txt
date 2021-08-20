@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
 project(CloudGamming VERSION 1.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 include_directories(Lib)
 include_directories(Lib/glfw-3.3.4/include)
 include_directories(Lib/glew-2.1.0/include)
 include_directories(Lib/glad/include)
 include_directories(Common)
+include_directories(src/common)
 
 find_library(DETOURS_LIB detours HINTS "./Lib")
 
@@ -19,3 +19,4 @@ add_subdirectory(GameLoader)
 add_subdirectory(Common)
 add_subdirectory(Client)
 add_subdirectory(Lib)
+add_subdirectory(src)
