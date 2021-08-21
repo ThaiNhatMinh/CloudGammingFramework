@@ -59,6 +59,20 @@
         "atomic": "cpp",
         "queue": "cpp",
         "algorithm": "cpp",
-        "deque": "cpp"
-    }
+        "deque": "cpp",
+        "array": "cpp",
+        "bit": "cpp",
+        "charconv": "cpp",
+        "clocale": "cpp",
+        "compare": "cpp",
+        "format": "cpp",
+        "forward_list": "cpp",
+        "iterator": "cpp",
+        "locale": "cpp",
+        "optional": "cpp",
+        "stop_token": "cpp",
+        "xlocbuf": "cpp",
+        "xlocmes": "cpp"
+    },
+    "cmake.configureOnOpen": true
 }
