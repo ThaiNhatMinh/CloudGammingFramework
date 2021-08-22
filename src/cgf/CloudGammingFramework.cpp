@@ -1,5 +1,5 @@
-#include "CloudGammingFramework.hh"
-#include "Planet.hh"
+#include "api/CloudGammingFramework.hh"
+#include "Planet/Planet.hh"
 
 
 static Planet myPlanet;

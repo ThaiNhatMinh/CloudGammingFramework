@@ -16,7 +16,7 @@ void LastError()
         0, NULL);
 
     LocalFree(lpMsgBuf);
-    LOG << (char*)lpMsgBuf << std::endl;
+    LOG_ERROR << (char*)lpMsgBuf << std::endl;
 }
 
 HMODULE CheckModule(const char* module)

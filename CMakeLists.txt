@@ -9,6 +9,7 @@ include_directories(Lib/glfw-3.3.4/include)
 include_directories(Lib/glew-2.1.0/include)
 include_directories(Lib/glad/include)
 include_directories(Common)
+include_directories(src)
 
 find_library(DETOURS_LIB detours HINTS "./Lib")
 
@@ -19,3 +20,4 @@ add_subdirectory(Common)
 add_subdirectory(Client)
 add_subdirectory(Lib)
 add_subdirectory(src)
+add_subdirectory(test)
