@@ -1,13 +1,10 @@
 #pragma once
 #include <string>
-#include "Module.hh"
-#include "common/AutoClose.hh"
+#include "Handle.hh"
 
 class FileMapping
 {
 private:
-    typedef AutoClose<HANDLE, CloseHandle> AutoCloseHandle;
-    typedef AutoClose<LPCVOID, UnmapViewOfFile> AutoCloseMapView;
 
     AutoCloseHandle m_mappingHandle;
     AutoCloseMapView m_address;
