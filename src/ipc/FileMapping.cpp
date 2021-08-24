@@ -3,6 +3,13 @@
 
 bool FileMapping::Create(const std::string &fileName, std::size_t numByte)
 {
+    if (m_isOpenCreate)
+    {
+        LOG_ERROR << "FileMapping already open at " << m_fileName << std::endl;
+        LOG_ERROR << "Call FileMapping::Release before create" << std::endl;
+        return false;
+    }
+
     AutoCloseHandle fileMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, numByte, fileName.c_str());
     if (fileMap == NULL)
     {
@@ -21,11 +28,20 @@ bool FileMapping::Create(const std::string &fileName, std::size_t numByte)
 
     m_mappingHandle = std::move(fileMap);
     m_address = std::move(address);
+    m_isOpenCreate = true;
+    m_fileName = fileName;
     return true;
 }
 
 bool FileMapping::Open(const std::string &fileName, std::size_t numByte)
 {
+    if (m_isOpenCreate)
+    {
+        LOG_ERROR << "FileMapping already open at " << m_fileName << std::endl;
+        LOG_ERROR << "Call FileMapping::Release before create" << std::endl;
+        return false;
+    }
+
     AutoCloseHandle hMapFile = OpenFileMapping(
         FILE_MAP_ALL_ACCESS, // read/write access
         FALSE,               // do not inherit the name
@@ -46,6 +62,8 @@ bool FileMapping::Open(const std::string &fileName, std::size_t numByte)
 
     m_mappingHandle = std::move(hMapFile);
     m_address = std::move(address);
+    m_isOpenCreate = true;
+    m_fileName = fileName;
     return true;
 }
 
@@ -56,7 +74,7 @@ void FileMapping::Release()
     m_numByte = 0;
 }
 
-int FileMapping::Write(const char* buffer, std::size_t length)
+bool FileMapping::Write(const char* buffer, std::size_t length)
 {
     if (length > m_numByte)
     {
@@ -66,14 +84,16 @@ int FileMapping::Write(const char* buffer, std::size_t length)
     return true;
 }
 
-std::string FileMapping::Read(std::size_t length)
+std::string FileMapping::Read(std::size_t length, int offset)
 {
-    if (length > m_numByte)
+    if (length + offset > m_numByte)
     {
-        length = m_numByte;
+        LOG_ERROR << "length + offset " << (length + offset) << " greater than " << m_numByte << std::endl;
+        return "";
     }
     
     std::string result(length, '\0');
-    std::memcpy(const_cast<char*>(result.data()), m_address.get(), length);
+    const char * address = static_cast<const char*>(m_address.get()) + offset;
+    std::memcpy(const_cast<char*>(result.data()), address, length);
     return result;
 }
