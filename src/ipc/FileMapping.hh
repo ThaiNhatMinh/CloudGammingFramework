@@ -10,7 +10,8 @@ private:
     AutoCloseMapView m_address;
     std::size_t m_numByte;
     std::string m_fileName;
-    bool m_isOpenCreate;
+    bool m_isOpenCreate = false;
+
 public:
     FileMapping() = default;
 
@@ -80,5 +81,6 @@ public:
         }
         std::string buffer = Read(structSize, offset);
         std::memcpy(dst, buffer.c_str(), structSize);
+        return true;
     }
 };

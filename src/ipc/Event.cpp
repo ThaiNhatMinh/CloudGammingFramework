@@ -1,5 +1,5 @@
 #include "Event.hh"
-
+#include "common/Module.hh"
 
 bool Event::Create(const std::string& name, bool initialState, bool manualReset)
 {
@@ -55,4 +55,5 @@ bool Event::Wait(DWORD timeOut)
         LastError();
         return false;
     }
+    return false;
 }

@@ -1,5 +1,6 @@
 #include "FileMapping.hh"
-#include "Logger.hh"
+#include "common/Module.hh"
+#include "common/Logger.hh"
 
 bool FileMapping::Create(const std::string &fileName, std::size_t numByte)
 {

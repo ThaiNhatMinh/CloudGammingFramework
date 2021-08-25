@@ -41,6 +41,8 @@ public:
 
     /**
      * Waits until the event is in the signaled state or the time-out interval elapses.
+     * 
+     * @param timeOut In milisecond
      */
     bool Wait(DWORD timeOut = INFINITE);
 };
