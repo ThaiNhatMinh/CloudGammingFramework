@@ -44,3 +44,15 @@ bool Event::Signal()
     }
     return true;
 }
+
+bool Event::Wait(DWORD timeOut)
+{
+    DWORD res = WaitForSingleObject(m_handle.get(), timeOut);
+    if (res == WAIT_OBJECT_0) return true;
+    if (res == WAIT_TIMEOUT) return false;
+    if (res == WAIT_FAILED)
+    {
+        LastError();
+        return false;
+    }
+}

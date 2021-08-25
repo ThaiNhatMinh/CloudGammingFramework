@@ -38,4 +38,9 @@ public:
      * Sets the specified event object to the nonsignaled state.
      */
     bool Reset();
+
+    /**
+     * Waits until the event is in the signaled state or the time-out interval elapses.
+     */
+    bool Wait(DWORD timeOut = INFINITE);
 };
