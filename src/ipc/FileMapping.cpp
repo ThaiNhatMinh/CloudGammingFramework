@@ -31,6 +31,7 @@ bool FileMapping::Create(const std::string &fileName, std::size_t numByte)
     m_address = std::move(address);
     m_isOpenCreate = true;
     m_fileName = fileName;
+    m_numByte = numByte;
     return true;
 }
 
@@ -65,6 +66,7 @@ bool FileMapping::Open(const std::string &fileName, std::size_t numByte)
     m_address = std::move(address);
     m_isOpenCreate = true;
     m_fileName = fileName;
+    m_numByte = numByte;
     return true;
 }
 
@@ -75,7 +77,7 @@ void FileMapping::Release()
     m_numByte = 0;
 }
 
-bool FileMapping::Write(const char* buffer, std::size_t length)
+bool FileMapping::Write(const void* buffer, std::size_t length)
 {
     if (length > m_numByte)
     {

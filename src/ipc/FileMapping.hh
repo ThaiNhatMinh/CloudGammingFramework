@@ -50,7 +50,7 @@ public:
      * 
      * @return True on success
      */
-    bool Write(const char* buffer, std::size_t length);
+    bool Write(const void* buffer, std::size_t length);
 
     /**
      * Read data from file mapping

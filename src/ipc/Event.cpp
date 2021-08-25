@@ -1,11 +1,13 @@
 #include "Event.hh"
 #include "common/Module.hh"
+#include "common/Logger.hh"
 
 bool Event::Create(const std::string& name, bool initialState, bool manualReset)
 {
     AutoCloseHandle handle = CreateEvent(nullptr, manualReset, initialState, name.c_str());
     if (handle == NULL)
     {
+        LOG_ERROR << "CreateEvent failed:" << std::endl;
         LastError();
         return false;
     }
@@ -15,9 +17,10 @@ bool Event::Create(const std::string& name, bool initialState, bool manualReset)
 
 bool Event::Open(const std::string& name)
 {
-    AutoCloseHandle handle = OpenEvent(0, false, name.c_str());
+    AutoCloseHandle handle = OpenEvent(EVENT_ALL_ACCESS, false, name.c_str());
     if (handle == NULL)
     {
+        LOG_ERROR << "OpenEvent failed:" << std::endl;
         LastError();
         return false;
     }

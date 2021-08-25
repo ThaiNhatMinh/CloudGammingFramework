@@ -44,7 +44,7 @@ bool Sun::LaunchGame(Sun::GameId id)
         directory = dir;
     }
     bool ret = CreateProcess(NULL, program,
-        NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE, NULL, directory.c_str(),
+        NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_CONSOLE, NULL, directory.c_str(),
         &startupInfo, &processInformation);
     if (!ret) {
         LOG_ERROR << "Game Start failed\n";
@@ -52,11 +52,25 @@ bool Sun::LaunchGame(Sun::GameId id)
         return false;
     }
 
-    if (!m_launchGame.Wait(5*60*1000))
+    if (!m_launchGame.Wait(30*1000))
     {
         LOG_ERROR << "Waiting for register timeout\n";
         return false;
     }
+    GameRegister info;
+    info.port = 1234;
+    if (!m_launchData.Write(&info, sizeof(GameRegister)))
+    {
+        LOG_ERROR << "Failed to send register information\n";
+        if (!TerminateProcess(processInformation.hProcess, -1))
+        {
+            LOG_ERROR << "Failed to terminate process:" << std::endl;
+            LastError();
+        }
+        return false;
+    }
 
-    return false;
+    m_launchGame.Signal();
+
+    return true;
 }
