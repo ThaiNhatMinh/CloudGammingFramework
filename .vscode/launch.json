@@ -5,30 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Client",
+            "name": "(Windows) Launch Console",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Client/Debug/Client.exe",
+            "program": "${workspaceFolder}/build\\test\\Game\\Debug\\Console.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${fileDirname}",
             "environment": [],
             "console": "integratedTerminal"
         },
         {
-            "name": "Server",
+            "name": "(Windows) Launch Sun",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/GameLoader.exe",
-            "args": [
-                "D:\\Study\\CloudGaming\\CloudGamming\\build\\Debug\\Hook.dll",
-                // "D:\\Code\\Universal-ImGui-D3D11-Hook\\Debug\\Universal-ImGui-D11-Hook.dll",
-                // "D:\\Code\\DirectX11Hook\\Debug\\DirectX11Hook.dll",
-                // "D:\\Study\\CloudGaming\\DirectXSDK\\Samples\\C++\\Direct3D11\\Bin\\x64\\SimpleSample11.exe"
-                // "D:\\Game\\SteamLibrary\\steamapps\\common\\Limbo\\limbo.exe"
-                // "D:\\Game\\Overcooked\\Overcooked.exe"
-                "D:\\Game\\Torchlight2\\Torchlight2.exe"
-            ],
+            "program": "${workspaceFolder}/build/src/Sun/Debug/Sun.exe",
+            "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
@@ -38,10 +30,7 @@
     "compounds": [
         {
             "name": "Server/Client",
-            "configurations": [
-                "Server",
-                "Client"
-            ],
+            "configurations": [],
         }
       ]
 }
