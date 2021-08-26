@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <map>
 #include <string>
+#include <sstream>
 
 class Configuration
 {
@@ -11,12 +12,21 @@ private:
     std::map<std::string, std::string> m_data;
 
 public:
+    Configuration() = default;
     Configuration(const std::string &filePath);
     ~Configuration();
 
     bool IsKeyExist(const std::string &key) { return m_data.find(key) != m_data.end(); };
     template <class T>
-    T GetValue(const std::string &key, T defaultValue = {});
+    T GetValue(const std::string &key, const T& defaultValue = {}) const;
+    template <class T>
+    void SetValue(const std::string &key, const T& value)
+    {
+        std::stringstream ss;
+        ss << value;
+        m_data[key] = ss.str();
+    }
+    
 
 private:
     void LoadFile(const std::string &filePath);
@@ -24,31 +34,34 @@ private:
 };
 
 template<>
-int Configuration::GetValue(const std::string &key, int defaultValue)
+inline int Configuration::GetValue(const std::string &key, const int& defaultValue) const
 {
-    if (m_data.find(key) == m_data.end())
+    auto iter = m_data.find(key);
+    if (iter == m_data.end())
     {
         return defaultValue;
     }
-    return std::atoi(m_data[key].c_str());
+    return std::atoi(iter->second.c_str());
 }
 
 template<>
-float Configuration::GetValue(const std::string &key, float defaultValue)
+inline float Configuration::GetValue(const std::string &key, const float& defaultValue) const
 {
-    if (m_data.find(key) == m_data.end())
+    auto iter = m_data.find(key);
+    if (iter == m_data.end())
     {
         return defaultValue;
     }
-    return static_cast<float>(std::atof(m_data[key].c_str()));
+    return static_cast<float>(std::atof(iter->second.c_str()));
 }
 
 template<>
-std::string Configuration::GetValue(const std::string &key, std::string defaultValue)
+inline std::string Configuration::GetValue(const std::string &key, const std::string& defaultValue) const
 {
-    if (m_data.find(key) == m_data.end())
+    auto iter = m_data.find(key);
+    if (iter == m_data.end())
     {
         return defaultValue;
     }
-    return m_data[key];
+    return iter->second;
 }

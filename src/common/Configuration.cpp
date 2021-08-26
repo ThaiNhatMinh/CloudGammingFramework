@@ -39,3 +39,15 @@ void Configuration::LoadFile(const std::string& filePath)
         LOG_DEBUG << "Config: " << key << "-" << value << std::endl;
     }
 }
+
+void Configuration::Save()
+{
+    if (m_filePath.empty()) return;
+    std::fstream file(m_filePath);
+    for(auto& pair : m_data)
+    {
+        file << pair.first << "=" << pair.second << std::endl;
+    }
+
+    file.close();
+}
