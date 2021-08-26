@@ -5,7 +5,7 @@
 #include "Sun/Sun.hh"
 #include "ipc/Named.hh"
 
-bool Planet::Init(const char* game, GraphicApi type, WndProcHandler handler)
+bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
 {
     m_gameName = game;
     m_graphicApi = type;
@@ -27,8 +27,20 @@ void Planet::PollEvent()
 
     InputEvent event = m_inputEvents.front();
     m_inputEvents.pop();
-
-    m_inputHandler(event.win32.msg, event.win32.wParam, event.win32.lParam);
+    switch (event.type)
+    {
+    case InputEvent::EventType::KEY:
+        m_inputHandler.KeyPressCallback(event.key.action, event.key.key);
+        break;
+    case InputEvent::EventType::MOUSE_MOVE:
+        m_inputHandler.CursorPositionCallback(event.mousePos.x, event.mousePos.y);
+        break;
+    case InputEvent::EventType::MOUSE_ACTION:
+        m_inputHandler.MouseButtonCallback(event.mouseAction.action, event.mouseAction.key);
+        break;
+    default:
+        break;
+    }
 }
 
 void Planet::InternalThread()

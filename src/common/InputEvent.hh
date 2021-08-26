@@ -1,17 +1,38 @@
 #pragma once
 #include "Win32.hh"
+#include "cgf/CloudGammingFramework.hh"
 
 struct InputEvent
 {
-    struct Win32
+    enum EventType
     {
-        UINT msg;
-        WPARAM wParam;
-        LPARAM lParam;
+        KEY,
+        MOUSE_MOVE,
+        MOUSE_ACTION
     };
+    struct KeyEvent
+    {
+       Action action;
+       Key key;
+    };
+
+    struct MousePosEvent
+    {
+        float x;
+        float y;
+    };
+
+    struct MouseActionEvent
+    {
+        Action action;
+        int key;
+    };
+
+    EventType type;
     union
     {
-        Win32 win32;
-        // Glfw glfw;
+        KeyEvent key;
+        MousePosEvent mousePos;
+        MouseActionEvent mouseAction;
     };
 };

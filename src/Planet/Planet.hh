@@ -16,7 +16,7 @@ class Planet
 private:
     GraphicApi m_graphicApi;
     std::string m_gameName;
-    WndProcHandler m_inputHandler;
+    InputCallback m_inputHandler;
     std::queue<InputEvent> m_inputEvents;
     std::thread m_pollEvent;
     Event m_launchGame;
@@ -33,7 +33,7 @@ public:
      * 
      * @return True on success
      */ 
-    bool Init(const char* gameName, GraphicApi type, WndProcHandler handler);
+    bool Init(const char* gameName, GraphicApi type, InputCallback handler);
     
     /**
      * Trigger all event in queue

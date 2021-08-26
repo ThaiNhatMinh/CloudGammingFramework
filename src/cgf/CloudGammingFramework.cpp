@@ -6,7 +6,7 @@ static Planet myPlanet;
 
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-bool cgfRegisterGame(const char* gameName, GraphicApi type, MY_HWND hWnd, WndProcHandler handler)
+bool cgfRegisterGame(const char* gameName, GraphicApi type, InputCallback handler)
 {
 	// WNDPROC originalWndProcHandler = (WNDPROC)SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)hWndProc);
 
