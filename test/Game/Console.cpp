@@ -10,5 +10,7 @@ int main()
     {
         std::cout << "Register failed\n";
     }
+    int temp;
+    std::cin >>  temp;
     return 0;
 }
