@@ -194,6 +194,12 @@ void WsaSocket::Init()
     }
 }
 
+void WsaSocket::Release()
+{
+    m_event.Release();
+    m_handle.Release();
+}
+
 //==========================================================================
 
 void WsaSocketPollEvent::PollEvent()

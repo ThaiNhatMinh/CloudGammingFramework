@@ -33,6 +33,8 @@ public:
 
     WSAEVENT GetEvent() const { return m_event.get(); };
     SOCKET GetHandle() const { return m_handle.get(); };
+
+    void Release();
 };
 
 class WsaEvent
