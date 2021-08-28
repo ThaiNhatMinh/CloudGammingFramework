@@ -1,16 +1,15 @@
 #include "Logger.hh"
 #include "Module.hh"
 
-void LastError()
+void LastErrorWithCode(DWORD error)
 {
     LPVOID lpMsgBuf;
-    DWORD dw = GetLastError();
     FormatMessage(
         FORMAT_MESSAGE_ALLOCATE_BUFFER |
         FORMAT_MESSAGE_FROM_SYSTEM |
         FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
-        dw,
+        error,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPTSTR)&lpMsgBuf,
         0, NULL);
@@ -19,6 +18,15 @@ void LastError()
     LOG_ERROR << (char*)lpMsgBuf << std::endl;
 }
 
+void LastError()
+{
+    LastErrorWithCode(GetLastError());
+}
+
+void LastSocketError()
+{
+    LastErrorWithCode(WSAGetLastError());
+}
 HMODULE CheckModule(const char* module)
 {
     HMODULE hMod = GetModuleHandle(module);
