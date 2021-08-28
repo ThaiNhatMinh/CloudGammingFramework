@@ -33,21 +33,21 @@ public:
     /**
      * Sets the specified event object to the signaled state.
      */
-    bool Signal();
+    bool Signal() const;
 
     /**
      * Sets the specified event object to the nonsignaled state.
      */
-    bool Reset();
+    bool Reset() const;
 
     /**
      * Waits until the event is in the signaled state or the time-out interval elapses.
      * 
      * @param timeOut In milisecond
      */
-    bool Wait(DWORD timeOut = INFINITE);
+    bool Wait(DWORD timeOut = INFINITE) const;
 
-    HANDLE GetHandle() { return m_handle.get(); }
+    HANDLE GetHandle() const { return m_handle.get(); }
 
     Event() = default;
     Event& operator=(Event&& other);

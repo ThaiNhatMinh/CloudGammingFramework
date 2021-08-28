@@ -292,7 +292,7 @@ void WsaSocketPollEvent::PollEvent()
 void WsaSocketPollEvent::UpdateArray()
 {
     std::size_t eventTotal = m_sockets.size();
-    EventArray[0] = m_exit.GetHandle();
+    EventArray[0] = m_exit->GetHandle();
     int index = 1;
     for (auto iter = m_sockets.begin(); iter != m_sockets.end(); iter++, index++)
     {

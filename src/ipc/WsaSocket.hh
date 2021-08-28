@@ -68,12 +68,12 @@ protected:
 private:
     WSAEVENT EventArray[WSA_MAXIMUM_WAIT_EVENTS];
     std::list<WsaSocketInformation> m_sockets;
-    Event m_exit;
+    const Event* m_exit;
 
 public:
     virtual void OnAccept(WsaSocket&& newSocket) {};
     bool AddSocket(const WsaSocket& newSocket, callback sendCallback = nullptr, callback recvCallback = nullptr);
-    void SetExitEvent(Event&& exitEvent) { m_exit = std::move(exitEvent); UpdateArray();};
+    void SetExitEvent(const Event& exitEvent) { m_exit = &exitEvent; UpdateArray();};
     void PollEvent();
     void UpdateArray();
 };
