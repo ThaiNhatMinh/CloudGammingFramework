@@ -12,6 +12,7 @@ WsaSocket::WsaSocket(SOCKET handle): m_handle(handle)
         return;
     }
     m_event = std::move(event);
+    LOG_DEBUG << "Socket handle: " << handle << std::endl;
 }
 
 WsaSocket::WsaSocket(WsaSocket&& other)
@@ -60,6 +61,7 @@ bool WsaSocket::Open(unsigned short port)
 
     m_handle = std::move(Listen);
     m_event = std::move(event);
+    LOG_DEBUG << "Socket handle: " << m_handle.get() << std::endl;
     return true;
 }
 
@@ -95,6 +97,7 @@ bool WsaSocket::Connect(std::string ip, USHORT port)
 
     m_handle = std::move(handle);
     m_event = std::move(event);
+    LOG_DEBUG << "Socket handle: " << m_handle.get() << std::endl;
     return true;
 }
 
@@ -135,6 +138,7 @@ bool WsaSocket::ConnectToHost(std::string host, USHORT port)
     }
 
     m_event = std::move(event);
+    LOG_DEBUG << "Socket handle: " << m_handle.get() << std::endl;
     return true;
 }
 
@@ -142,6 +146,7 @@ int WsaSocket::Send(const void* buffer, int length) const
 {
     return send(m_handle.get(), static_cast<const char*>(buffer), length, 0);
 }
+
 int WsaSocket::SendAll(const void* buffer, int length) const
 {
     int sent = 0;
@@ -202,81 +207,78 @@ void WsaSocketPollEvent::PollEvent()
         Index = Index - WSA_WAIT_EVENT_0;
         if (Index == 0) break; // exit event is signal
 
-        // Iterate through all events to see if more than one is signaled
-        auto sock = ++m_sockets.begin();
-        for (std::size_t i = 1; i < eventTotal; i++)
+        auto sock = m_sockets.begin();
+        for (std::size_t i = 1; i < Index; i++)
         {
-            Index = WSAWaitForMultipleEvents(1, &EventArray[i], TRUE, 1000, FALSE);
-            if (Index == WSA_WAIT_FAILED || Index == WSA_WAIT_TIMEOUT) continue;
-            Index = i;
-            WSANETWORKEVENTS NetworkEvents;
-            WSAEnumNetworkEvents(sock->socket->GetHandle(), EventArray[Index], &NetworkEvents);
-            // Check for FD_ACCEPT messages
-            if (NetworkEvents.lNetworkEvents & FD_ACCEPT)
+            sock = ++sock;
+        }
+        WSANETWORKEVENTS NetworkEvents;
+        WSAEnumNetworkEvents(sock->socket->GetHandle(), EventArray[Index], &NetworkEvents);
+        // Check for FD_ACCEPT messages
+        if (NetworkEvents.lNetworkEvents & FD_ACCEPT)
+        {
+            if (NetworkEvents.iErrorCode[FD_ACCEPT_BIT] != 0)
             {
-                if (NetworkEvents.iErrorCode[FD_ACCEPT_BIT] != 0)
-                {
-                    LOG_ERROR << "FD_ACCEPT failed with error " << NetworkEvents.iErrorCode[FD_ACCEPT_BIT] << std::endl;
-                    break;
-                }
-                // Accept a new connection, and add it to the socket and event lists
-                OnAccept(accept(sock->socket->GetHandle(), NULL, NULL));
+                LOG_ERROR << "FD_ACCEPT failed with error:";
+                LastErrorWithCode(NetworkEvents.iErrorCode[FD_ACCEPT_BIT]);
+                break;
             }
+            // Accept a new connection, and add it to the socket and event lists
+            OnAccept(accept(sock->socket->GetHandle(), NULL, NULL));
+        }
 
-            // Process FD_READ notification
-            if (NetworkEvents.lNetworkEvents & FD_READ)
+        // Process FD_READ notification
+        if (NetworkEvents.lNetworkEvents & FD_READ)
+        {
+            if (NetworkEvents.iErrorCode[FD_READ_BIT] != 0)
             {
-                if (NetworkEvents.iErrorCode[FD_READ_BIT] != 0)
-                {
-                    LOG_ERROR << "FD_READ failed with error " << NetworkEvents.iErrorCode[FD_READ_BIT] << std::endl;
-                    break;
-                }
-                // Read data from the socket
-                std::string buffer;
-                int numRecv = sock->socket->Recv(buffer);
-                if (numRecv != SOCKET_ERROR)
-                {
-                    std::memcpy(sock->recvBuffer + sock->bytesRecv, buffer.data(), numRecv);
-                    sock->bytesRecv += numRecv;
-                    if (sock->recvCallback)
-                        (this->*sock->recvCallback)(&(*sock));
-                }
+                LOG_ERROR << "FD_READ failed with error:";
+                LastErrorWithCode(NetworkEvents.iErrorCode[FD_READ_BIT]);
+                break;
             }
+            // Read data from the socket
+            std::string buffer;
+            int numRecv = sock->socket->Recv(buffer);
+            if (numRecv != SOCKET_ERROR)
+            {
+                std::memcpy(sock->recvBuffer + sock->bytesRecv, buffer.data(), numRecv);
+                sock->bytesRecv += numRecv;
+                if (sock->recvCallback)
+                    (this->*sock->recvCallback)(&(*sock));
+            }
+        }
 
-            // Process FD_WRITE notification
-            if (NetworkEvents.lNetworkEvents & FD_WRITE)
+        // Process FD_WRITE notification
+        if (NetworkEvents.lNetworkEvents & FD_WRITE)
+        {
+            if (NetworkEvents.iErrorCode[FD_WRITE_BIT] != 0)
             {
-                if (NetworkEvents.iErrorCode[FD_WRITE_BIT] != 0)
+                LOG_ERROR << "FD_WRITE failed with error:";
+                LastErrorWithCode(NetworkEvents.iErrorCode[FD_WRITE_BIT]);
+                break;
+            }
+            if (sock->sendCallback)
+                (this->*sock->sendCallback)(&(*sock));
+            if (sock->bytesSend > 0)
+            {
+                int numSend = sock->socket->Send(sock->sendBuffer, sock->bytesSend);
+                if (numSend != SOCKET_ERROR)
                 {
-                    LOG_ERROR << "FD_WRITE failed with error " << NetworkEvents.iErrorCode[FD_WRITE_BIT] << std::endl;
-                    break;
-                }
-                if (sock->bytesSend > 0)
-                {
-                    if (sock->sendCallback)
-                        (this->*sock->sendCallback)(&(*sock));
-                    int numSend = sock->socket->Send(sock->sendBuffer, sock->bytesSend);
-                    if (numSend != SOCKET_ERROR)
-                    {
-                        sock->bytesSend -= numSend;
-                        std::memmove(&sock->sendBuffer + numSend, sock->sendBuffer, sock->bytesSend);
-                    }
+                    sock->bytesSend -= numSend;
+                    std::memmove(&sock->sendBuffer + numSend, sock->sendBuffer, sock->bytesSend);
                 }
             }
+        }
 
-            if (NetworkEvents.lNetworkEvents & FD_CLOSE)
+        if (NetworkEvents.lNetworkEvents & FD_CLOSE)
+        {
+            if (NetworkEvents.iErrorCode[FD_CLOSE_BIT] != 0)
             {
-                if (NetworkEvents.iErrorCode[FD_CLOSE_BIT] != 0)
-                {
-                    LOG_ERROR << "FD_CLOSE failed with error " << NetworkEvents.iErrorCode[FD_CLOSE_BIT] << std::endl;
-                    break;
-                }
-                sock = m_sockets.erase(sock);
-                UpdateArray();
-            } else 
-            {
-                sock++;
+                LOG_ERROR << "FD_CLOSE failed with error:";
+                LastErrorWithCode(NetworkEvents.iErrorCode[FD_CLOSE_BIT]);
             }
+            sock = m_sockets.erase(sock);
+            UpdateArray();
         }
     }
 }

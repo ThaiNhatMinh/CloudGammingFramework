@@ -60,3 +60,14 @@ bool Event::Wait(DWORD timeOut)
     }
     return false;
 }
+
+Event& Event::operator=(Event&& other)
+{
+    this->m_handle = std::move(other.m_handle);
+    return *this;
+}
+
+Event::Event(Event&& other)
+{
+    this->m_handle = std::move(other.m_handle);
+}

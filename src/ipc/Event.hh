@@ -1,8 +1,9 @@
 #pragma once
 #include <string>
 #include "Handle.hh"
+#include "common/NonCopyable.hh"
 
-class Event
+class Event: public NonCopyable
 {
 private:
     AutoCloseHandle m_handle;
@@ -45,4 +46,10 @@ public:
      * @param timeOut In milisecond
      */
     bool Wait(DWORD timeOut = INFINITE);
+
+    HANDLE GetHandle() { return m_handle.get(); }
+
+    Event() = default;
+    Event& operator=(Event&& other);
+    Event(Event&& other);
 };
