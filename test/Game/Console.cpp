@@ -2,9 +2,11 @@
 #include <iostream>
 int main()
 {
-    bool res = cgfRegisterGame("Test console", GraphicApi::DIRECTX_9, NULL, [](unsigned int msg, MY_WPARAM wParam, MY_LPARAM lParam) {
-
-    });
+    InputCallback callback;
+    callback.CursorPositionCallback = [](double xpos, double ypos) {};
+    callback.MouseButtonCallback = [](Action action, int key) {};
+    callback.KeyPressCallback = [](Action action, Key key) {};
+    bool res = cgfRegisterGame("Test console", GraphicApi::DIRECTX_9, callback);
 
     if (!res)
     {
