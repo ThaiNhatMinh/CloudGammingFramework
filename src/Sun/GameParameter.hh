@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "Define.hh"
+#include "cgf/CloudGammingFramework.hh"
 
 struct GameParameter
 {
