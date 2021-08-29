@@ -72,6 +72,7 @@ private:
 
 public:
     virtual void OnAccept(WsaSocket&& newSocket) {};
+    virtual void OnClose(WsaSocketInformation* sock) {};
     bool AddSocket(const WsaSocket& newSocket, callback sendCallback = nullptr, callback recvCallback = nullptr);
     void SetExitEvent(const Event& exitEvent) { m_exit = &exitEvent; UpdateArray();};
     void PollEvent();

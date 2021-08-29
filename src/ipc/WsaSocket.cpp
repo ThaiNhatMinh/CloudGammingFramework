@@ -283,6 +283,7 @@ void WsaSocketPollEvent::PollEvent()
                 LOG_ERROR << "FD_CLOSE failed with error:";
                 LastErrorWithCode(NetworkEvents.iErrorCode[FD_CLOSE_BIT]);
             }
+            OnClose(&(*sock));
             sock = m_sockets.erase(sock);
             UpdateArray();
         }
