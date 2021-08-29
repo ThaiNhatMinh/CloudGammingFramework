@@ -1,5 +1,5 @@
 #include "GlfwWindow.hh"
-#include "Logger.hh"
+#include "common/Logger.hh"
 
 Window::Window():Window(WIDTH, HEIGHT, DEFAULT_NAME)
 {
@@ -8,7 +8,6 @@ Window::Window():Window(WIDTH, HEIGHT, DEFAULT_NAME)
 
 Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width(width), m_height(height), m_name(name)
 {
-    TRACE;
     m_bIsWindowResize = false;
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
@@ -25,7 +24,6 @@ Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     int display_w, display_h;
     glfwGetFramebufferSize(m_pWindow, &display_w, &display_h);
-    LOG << "Frame size: " << display_w << "x" << display_h << std::endl;
     m_mouseMoveCallback = [](double, double){};
 }
 
