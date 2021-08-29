@@ -146,6 +146,8 @@ enum Action
     RELEASE
 };
 
+typedef unsigned int GameId;
+const GameId INVALID_GAMEID = 0;
 typedef void (*cgfCursorposfun)(double xpos, double ypos);
 typedef void (*cgfMousebuttonfun)(Action action, int key);
 typedef void (*cgfKeyPressfun)(Action action, Key key);
