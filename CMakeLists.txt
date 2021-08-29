@@ -15,7 +15,6 @@ find_library(DETOURS_LIB detours HINTS "./Lib")
 
 # add_compile_definitions(LOG_TO_FILE)
 
-add_subdirectory(GameLoader)
 add_subdirectory(Lib)
 add_subdirectory(src)
 add_subdirectory(test)
