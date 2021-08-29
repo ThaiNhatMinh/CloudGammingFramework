@@ -3,15 +3,16 @@
 #include <string>
 #include <thread>
 #include "cgf/CloudGammingFramework.hh"
-#include "common/InputEvent.hh"
+#include "cgf/InputEvent.hh"
 #include "ipc/Event.hh"
 #include "ipc/FileMapping.hh"
+#include "ipc/WsaSocket.hh"
 #include "Sun/Sun.hh"
 
 /**
  * A class run within a game to communicate with Sun
  */
-class Planet
+class Planet : public WsaSocketPollEvent
 {
 private:
     GraphicApi m_graphicApi;
@@ -20,10 +21,15 @@ private:
     std::queue<InputEvent> m_inputEvents;
     std::thread m_pollEvent;
     Event m_launchGame;
+    Event m_finalize;
     FileMapping m_launchData;
     StreamPort m_port;
+    WsaSocket m_socket;
+    WsaSocket m_client;
 
 public:
+    Planet() {};
+
     /**
      * Initialize Planet
      * 
@@ -47,4 +53,6 @@ private:
     void InternalThread();
 
     void QueryPort();
+    void OnRecv(WsaSocketInformation* sock);
+    void OnAccept(WsaSocket&& newConnect) override;
 };
