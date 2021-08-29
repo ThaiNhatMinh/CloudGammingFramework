@@ -18,6 +18,7 @@ int main()
                        std::cout << map1.Read(msg.length()) << std::endl;
                        std::cout<< "Done\n";
                        Sleep(4000);
+                       return 0;
                    });
     std::thread t2([]()
                    {
