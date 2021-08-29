@@ -24,6 +24,9 @@ int main(int argc, char** argv)
             event.key.action = Action::PRESS;
         else if (action == GLFW_RELEASE)
             event.key.action = Action::RELEASE;
+        else
+            event.key.action = Action::PRESSING;
+        std::cout << "Scancode: " << scancode << " mods: " << mods << std::endl;
         if (sock.SendAll(&event, sizeof(event)) != sizeof(event))
         {
             std::cout << "ERROR\n";
