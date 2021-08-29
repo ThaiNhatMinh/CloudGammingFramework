@@ -41,6 +41,7 @@ void Planet::PollEvent()
     switch (event.type)
     {
     case InputEvent::EventType::KEY:
+        m_KeyStatus[event.key.key] = event.key.action;
         m_inputHandler.KeyPressCallback(event.key.action, event.key.key);
         break;
     case InputEvent::EventType::MOUSE_MOVE:
@@ -99,4 +100,133 @@ void Planet::OnAccept(WsaSocket &&newConnect)
 {
     m_client = std::move(newConnect);
     AddSocket(m_client, nullptr, static_cast<callback>(&Planet::OnRecv));
+}
+
+int Planet::GetKeyStatus(Key key)
+{
+    return m_KeyStatus[key];
+}
+
+void Planet::InitKeyStatus()
+{
+    m_KeyStatus[Key::KEY_SPACE] = -1;
+    m_KeyStatus[Key::KEY_APOSTROPHE] = -1;
+    m_KeyStatus[Key::KEY_COMMA] = -1;
+    m_KeyStatus[Key::KEY_MINUS] = -1;
+    m_KeyStatus[Key::KEY_PERIOD] = -1;
+    m_KeyStatus[Key::KEY_SLASH] = -1;
+    m_KeyStatus[Key::KEY_0] = -1;
+    m_KeyStatus[Key::KEY_1] = -1;
+    m_KeyStatus[Key::KEY_2] = -1;
+    m_KeyStatus[Key::KEY_3] = -1;
+    m_KeyStatus[Key::KEY_4] = -1;
+    m_KeyStatus[Key::KEY_5] = -1;
+    m_KeyStatus[Key::KEY_6] = -1;
+    m_KeyStatus[Key::KEY_7] = -1;
+    m_KeyStatus[Key::KEY_8] = -1;
+    m_KeyStatus[Key::KEY_9] = -1;
+    m_KeyStatus[Key::KEY_SEMICOLON] = -1;
+    m_KeyStatus[Key::KEY_EQUAL] = -1;
+    m_KeyStatus[Key::KEY_A] = -1;
+    m_KeyStatus[Key::KEY_B] = -1;
+    m_KeyStatus[Key::KEY_C] = -1;
+    m_KeyStatus[Key::KEY_D] = -1;
+    m_KeyStatus[Key::KEY_E] = -1;
+    m_KeyStatus[Key::KEY_F] = -1;
+    m_KeyStatus[Key::KEY_G] = -1;
+    m_KeyStatus[Key::KEY_H] = -1;
+    m_KeyStatus[Key::KEY_I] = -1;
+    m_KeyStatus[Key::KEY_J] = -1;
+    m_KeyStatus[Key::KEY_K] = -1;
+    m_KeyStatus[Key::KEY_L] = -1;
+    m_KeyStatus[Key::KEY_M] = -1;
+    m_KeyStatus[Key::KEY_N] = -1;
+    m_KeyStatus[Key::KEY_O] = -1;
+    m_KeyStatus[Key::KEY_P] = -1;
+    m_KeyStatus[Key::KEY_Q] = -1;
+    m_KeyStatus[Key::KEY_R] = -1;
+    m_KeyStatus[Key::KEY_S] = -1;
+    m_KeyStatus[Key::KEY_T] = -1;
+    m_KeyStatus[Key::KEY_U] = -1;
+    m_KeyStatus[Key::KEY_V] = -1;
+    m_KeyStatus[Key::KEY_W] = -1;
+    m_KeyStatus[Key::KEY_X] = -1;
+    m_KeyStatus[Key::KEY_Y] = -1;
+    m_KeyStatus[Key::KEY_Z] = -1;
+    m_KeyStatus[Key::KEY_LEFT_BRACKET] = -1;
+    m_KeyStatus[Key::KEY_BACKSLASH] = -1;
+    m_KeyStatus[Key::KEY_RIGHT_BRACKET] = -1;
+    m_KeyStatus[Key::KEY_GRAVE_ACCENT] = -1;
+    m_KeyStatus[Key::KEY_WORLD_1] = -1;
+    m_KeyStatus[Key::KEY_WORLD_2] = -1;
+    m_KeyStatus[Key::KEY_ESCAPE] = -1;
+    m_KeyStatus[Key::KEY_ENTER] = -1;
+    m_KeyStatus[Key::KEY_TAB] = -1;
+    m_KeyStatus[Key::KEY_BACKSPACE] = -1;
+    m_KeyStatus[Key::KEY_INSERT] = -1;
+    m_KeyStatus[Key::KEY_DELETE] = -1;
+    m_KeyStatus[Key::KEY_RIGHT] = -1;
+    m_KeyStatus[Key::KEY_LEFT] = -1;
+    m_KeyStatus[Key::KEY_DOWN] = -1;
+    m_KeyStatus[Key::KEY_UP] = -1;
+    m_KeyStatus[Key::KEY_PAGE_UP] = -1;
+    m_KeyStatus[Key::KEY_PAGE_DOWN] = -1;
+    m_KeyStatus[Key::KEY_HOME] = -1;
+    m_KeyStatus[Key::KEY_END] = -1;
+    m_KeyStatus[Key::KEY_CAPS_LOCK] = -1;
+    m_KeyStatus[Key::KEY_SCROLL_LOCK] = -1;
+    m_KeyStatus[Key::KEY_NUM_LOCK] = -1;
+    m_KeyStatus[Key::KEY_PRINT_SCREEN] = -1;
+    m_KeyStatus[Key::KEY_PAUSE] = -1;
+    m_KeyStatus[Key::KEY_F1] = -1;
+    m_KeyStatus[Key::KEY_F2] = -1;
+    m_KeyStatus[Key::KEY_F3] = -1;
+    m_KeyStatus[Key::KEY_F4] = -1;
+    m_KeyStatus[Key::KEY_F5] = -1;
+    m_KeyStatus[Key::KEY_F6] = -1;
+    m_KeyStatus[Key::KEY_F7] = -1;
+    m_KeyStatus[Key::KEY_F8] = -1;
+    m_KeyStatus[Key::KEY_F9] = -1;
+    m_KeyStatus[Key::KEY_F10] = -1;
+    m_KeyStatus[Key::KEY_F11] = -1;
+    m_KeyStatus[Key::KEY_F12] = -1;
+    m_KeyStatus[Key::KEY_F13] = -1;
+    m_KeyStatus[Key::KEY_F14] = -1;
+    m_KeyStatus[Key::KEY_F15] = -1;
+    m_KeyStatus[Key::KEY_F16] = -1;
+    m_KeyStatus[Key::KEY_F17] = -1;
+    m_KeyStatus[Key::KEY_F18] = -1;
+    m_KeyStatus[Key::KEY_F19] = -1;
+    m_KeyStatus[Key::KEY_F20] = -1;
+    m_KeyStatus[Key::KEY_F21] = -1;
+    m_KeyStatus[Key::KEY_F22] = -1;
+    m_KeyStatus[Key::KEY_F23] = -1;
+    m_KeyStatus[Key::KEY_F24] = -1;
+    m_KeyStatus[Key::KEY_F25] = -1;
+    m_KeyStatus[Key::KEY_KP_0] = -1;
+    m_KeyStatus[Key::KEY_KP_1] = -1;
+    m_KeyStatus[Key::KEY_KP_2] = -1;
+    m_KeyStatus[Key::KEY_KP_3] = -1;
+    m_KeyStatus[Key::KEY_KP_4] = -1;
+    m_KeyStatus[Key::KEY_KP_5] = -1;
+    m_KeyStatus[Key::KEY_KP_6] = -1;
+    m_KeyStatus[Key::KEY_KP_7] = -1;
+    m_KeyStatus[Key::KEY_KP_8] = -1;
+    m_KeyStatus[Key::KEY_KP_9] = -1;
+    m_KeyStatus[Key::KEY_KP_DECIMAL] = -1;
+    m_KeyStatus[Key::KEY_KP_DIVIDE] = -1;
+    m_KeyStatus[Key::KEY_KP_MULTIPLY] = -1;
+    m_KeyStatus[Key::KEY_KP_SUBTRACT] = -1;
+    m_KeyStatus[Key::KEY_KP_ADD] = -1;
+    m_KeyStatus[Key::KEY_KP_ENTER] = -1;
+    m_KeyStatus[Key::KEY_KP_EQUAL] = -1;
+    m_KeyStatus[Key::KEY_LEFT_SHIFT] = -1;
+    m_KeyStatus[Key::KEY_LEFT_CONTROL] = -1;
+    m_KeyStatus[Key::KEY_LEFT_ALT] = -1;
+    m_KeyStatus[Key::KEY_LEFT_SUPER] = -1;
+    m_KeyStatus[Key::KEY_RIGHT_SHIFT] = -1;
+    m_KeyStatus[Key::KEY_RIGHT_CONTROL] = -1;
+    m_KeyStatus[Key::KEY_RIGHT_ALT] = -1;
+    m_KeyStatus[Key::KEY_RIGHT_SUPER] = -1;
+    m_KeyStatus[Key::KEY_MENU] = -1;
 }

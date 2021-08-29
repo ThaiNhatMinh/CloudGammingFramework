@@ -2,6 +2,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+
 #include "cgf/CloudGammingFramework.hh"
 #include "cgf/InputEvent.hh"
 #include "ipc/Event.hh"
@@ -26,6 +27,7 @@ private:
     StreamPort m_port;
     WsaSocket m_socket;
     WsaSocket m_client;
+    char m_KeyStatus[512];
 
 public:
     Planet() {};
@@ -46,6 +48,7 @@ public:
      */
     void PollEvent();
 
+    int GetKeyStatus(Key key);
 private:
     /**
      * Receive event from client and put it into queue
@@ -55,4 +58,5 @@ private:
     void QueryPort();
     void OnRecv(WsaSocketInformation* sock);
     void OnAccept(WsaSocket&& newConnect) override;
+    void InitKeyStatus();
 };

@@ -143,6 +143,7 @@ enum Key
 enum Action
 {
     PRESS,
+    PRESSING,
     RELEASE
 };
 
@@ -161,3 +162,11 @@ typedef struct
 
 bool cgfRegisterGame(const char *gameName, GraphicApi type, InputCallback callback);
 void cgfPollEvent();
+
+/**
+ * Get status of key
+ *
+ * @param key Key to check
+ * @return Action::PRESSING if key is pressing, otherwise -1
+ */
+int cgfGetKeyStatus(Key key);

@@ -18,6 +18,11 @@ void cgfPollEvent()
     myPlanet.PollEvent();
 }
 
+int cgfGetKeyStatus(Key key)
+{
+    return myPlanet.GetKeyStatus(key);
+}
+
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     return S_OK;
