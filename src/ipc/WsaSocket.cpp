@@ -209,7 +209,7 @@ void WsaSocketPollEvent::PollEvent()
     {
         // Wait for network events on all sockets
         std::size_t eventTotal = m_sockets.size() + 1;
-        int Index = WSAWaitForMultipleEvents(eventTotal, EventArray, FALSE, WSA_INFINITE, FALSE);
+        std::size_t Index = WSAWaitForMultipleEvents(eventTotal, EventArray, FALSE, WSA_INFINITE, FALSE);
         Index = Index - WSA_WAIT_EVENT_0;
         if (Index == 0) break; // exit event is signal
 

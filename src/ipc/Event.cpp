@@ -28,7 +28,7 @@ bool Event::Open(const std::string& name)
     return true;
 }
 
-bool Event::Reset()
+bool Event::Reset() const
 {
     if (!ResetEvent(m_handle.get()))
     {
@@ -38,7 +38,7 @@ bool Event::Reset()
     return true;
 }
 
-bool Event::Signal()
+bool Event::Signal() const
 {
     if (!SetEvent(m_handle.get()))
     {
@@ -48,7 +48,7 @@ bool Event::Signal()
     return true;
 }
 
-bool Event::Wait(DWORD timeOut)
+bool Event::Wait(DWORD timeOut) const
 {
     DWORD res = WaitForSingleObject(m_handle.get(), timeOut);
     if (res == WAIT_OBJECT_0) return true;
