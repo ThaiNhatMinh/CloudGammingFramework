@@ -8,8 +8,10 @@
             "name": "(Windows) Launch Console",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build\\test\\Game\\Debug\\Console.exe",
-            "args": [],
+            // "program": "${workspaceFolder}/build\\test\\Game\\Debug\\Console.exe",
+            // "program": "${workspaceFolder}/build\\test\\Debug\\SocketClient.exe",
+            "program": "${workspaceFolder}/build\\test\\Client\\Debug\\ClientConsole.exe",
+            "args": ["1000"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
@@ -25,12 +27,26 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "console": "integratedTerminal"
-        }
+        }, {
+            "name": "(Windows) Launch Game Console",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build\\test\\Game\\Debug\\Console.exe",
+            // "program": "${workspaceFolder}/build\\test\\Debug\\SocketClient.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
     ],
     "compounds": [
         {
             "name": "Server/Client",
-            "configurations": [],
+            "configurations": [
+                "(Windows) Launch Sun",
+                "(Windows) Launch Game Console"
+            ],
         }
       ]
 }
