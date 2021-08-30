@@ -35,6 +35,16 @@ public:
         return m_handle == other;
     }
 
+    bool operator==(const AutoClose& other)
+    {
+        return m_handle == other.m_handle;
+    }
+
+    bool operator!=(const AutoClose& other)
+    {
+        return !(m_handle == other.m_handle);
+    }
+
     void Release()
     {
         if (m_method == nullptr) return;
