@@ -1,3 +1,4 @@
+#include "common/Message.hh"
 #include "glfw/GlfwWindow.hh"
 #include "ipc/WsaSocket.hh"
 #include "cgf/InputEvent.hh"
@@ -26,8 +27,11 @@ int main(int argc, char** argv)
             event.key.action = Action::RELEASE;
         else
             event.key.action = Action::PRESSING;
-        std::cout << "Scancode: " << scancode << " mods: " << mods << std::endl;
-        if (sock.SendAll(&event, sizeof(event)) != sizeof(event))
+        // std::cout << "Scancode: " << scancode << " mods: " << mods << std::endl;
+        std::cout << "Action: " << event.key.action << " Key: " << event.key.key << std::endl;
+        static char buffer[64];
+        CreateInputMsg(buffer, 64, event);
+        if (sock.SendAll(buffer, MSG_INPUT_PACKAGE_SIZE) != MSG_INPUT_PACKAGE_SIZE)
         {
             std::cout << "ERROR\n";
         }

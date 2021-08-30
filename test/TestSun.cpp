@@ -1,5 +1,5 @@
-#include "Sun.hh"
-#include "GameParameter.hh"
+#include "Sun/Sun.hh"
+#include "Sun/GameParameter.hh"
 #include "common/Configuration.hh"
 #include <iostream>
 

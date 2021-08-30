@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(Windows) Launch Console",
+            "name": "(Windows) Launch Client Console",
             "type": "cppvsdbg",
             "request": "launch",
             // "program": "${workspaceFolder}/build\\test\\Game\\Debug\\Console.exe",
@@ -21,7 +21,7 @@
             "name": "(Windows) Launch Sun",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/src/Sun/Debug/Sun.exe",
+            "program": "${workspaceFolder}/build/test/Debug/TestSun.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -45,7 +45,7 @@
             "name": "Server/Client",
             "configurations": [
                 "(Windows) Launch Sun",
-                "(Windows) Launch Game Console"
+                "(Windows) Launch Client Console"
             ],
         }
       ]

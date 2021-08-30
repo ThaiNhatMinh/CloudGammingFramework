@@ -18,9 +18,14 @@ int main()
         std::cout << "Register failed\n";
     }
     
-    while(true)
+    while(!cgfShouldExit())
     {
         cgfPollEvent();
+        if (cgfGetKeyStatus(Key::KEY_SPACE) == Action::PRESSING)
+            break;
     }
+    std::cout <<  "Start cgfFinalize\n";
+    cgfFinalize();
+    std::cout <<  "Finish cgfFinalize\n";
     return 0;
 }
