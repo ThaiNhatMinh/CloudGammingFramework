@@ -28,6 +28,11 @@ WsaSocket& WsaSocket::operator=(WsaSocket&& other)
     return *this;
 }
 
+bool WsaSocket::operator==(const WsaSocket& other)
+{
+    return m_handle == other.m_handle;
+}
+
 bool WsaSocket::Open(unsigned short port)
 {
     AutoCloseSocket Listen = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);

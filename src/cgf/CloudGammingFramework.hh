@@ -170,3 +170,17 @@ void cgfPollEvent();
  * @return Action::PRESSING if key is pressing, otherwise -1
  */
 int cgfGetKeyStatus(Key key);
+
+void cgfFinalize();
+
+void cgfSetResolution(unsigned int width, unsigned int height);
+
+/**
+ * 3 byte per pixel
+ */
+void cgfSetFrame(const void* pData);
+
+/**
+ * Return true if client quit game or client disconnect timeout
+ */
+bool cgfShouldExit();

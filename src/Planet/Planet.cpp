@@ -1,7 +1,7 @@
 #include <exception>
 
 #include "common/Logger.hh"
-#include "common/Socket.hh"
+#include "common/Message.hh"
 #include "Planet.hh"
 #include "Sun/Sun.hh"
 #include "ipc/Named.hh"
@@ -19,7 +19,7 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
         return false;
     }
     QueryPort();
-    Socket::InitSocket();
+    WsaSocket::Init();
     if (!m_socket.Open(m_port))
     {
         LOG_ERROR << "Open port failed\n";
@@ -29,6 +29,7 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
     AddSocket(m_socket);
     m_pollEvent = std::thread(&Planet::InternalThread, this);
     m_pollEvent.detach();
+    InitKeyStatus();
     return true; 
 }
 
@@ -63,8 +64,9 @@ void Planet::InternalThread()
      * - Waiting for client
      * - Waiting for input and put to queue
      */
-    // PollEvent({}, m_finalize);
     WsaSocketPollEvent::PollEvent();
+    // Signal poll stopped;
+    m_finalize.Signal();
 }
 
 void Planet::QueryPort()
@@ -85,14 +87,21 @@ void Planet::QueryPort()
 
 void Planet::OnRecv(WsaSocketInformation *sock)
 {
-    std::size_t size = sizeof(InputEvent);
-    while (sock->bytesRecv >= size)
+    constexpr std::size_t size = sizeof(InputEvent);
+    while (sock->bytesRecv >= MSG_INPUT_PACKAGE_SIZE)
     {
-        InputEvent event;
-        std::memcpy(&event, sock->recvBuffer, size);
-        sock->bytesRecv -= size;
-        std::memmove(sock->recvBuffer, sock->recvBuffer + size, sock->bytesRecv);
-        m_inputEvents.push(event);
+        MessageHeader header = ParseHeaderMsg(sock->recvBuffer);
+        if (header.code == Message::MSG_INPUT)
+        {
+            InputEvent event;
+            std::memcpy(&event, &sock->recvBuffer[MSG_HEADER_LENGTH], size);
+            sock->bytesRecv -= MSG_INPUT_PACKAGE_SIZE;
+            std::memmove(sock->recvBuffer, &sock->recvBuffer[MSG_INPUT_PACKAGE_SIZE], sock->bytesRecv);
+            m_inputEvents.push(event);
+        } else
+        {
+            LOG_ERROR << "Unknow message code: " << header.code << std::endl;
+        }
     }
 }
 
@@ -102,9 +111,64 @@ void Planet::OnAccept(WsaSocket &&newConnect)
     AddSocket(m_client, nullptr, static_cast<callback>(&Planet::OnRecv));
 }
 
+void Planet::OnClose(WsaSocketInformation* sock)
+{
+    if (sock->socket->GetHandle() != m_client.GetHandle())
+    {
+        LOG_ERROR << "Close on unknow socket\n";
+        return;
+    }
+
+    m_client.Release();
+}
+
 int Planet::GetKeyStatus(Key key)
 {
     return m_KeyStatus[key];
+}
+
+void Planet::Finalize()
+{
+    m_finalize.Signal();
+    if (!m_finalize.Wait(500))
+    {
+        LOG_WARN << "Failed to waiting for thread stop\n";
+        return;
+    }
+    LOG_DEBUG << "Finalize planet\n";
+}
+
+void Planet::SetResolution(std::size_t w, std::size_t h)
+{
+    m_Width = w;
+    m_Height = h;
+    m_pFramePackage.reset(new char[w*h*m_BytePerPixel + MSG_HEADER_LENGTH]);
+    
+}
+
+void Planet::SetFrame(const void* pData)
+{
+    std::size_t size = m_Width * m_Height * m_BytePerPixel;
+    CreateFrameMsg(m_pFramePackage.get(), size + MSG_HEADER_LENGTH, pData, size);
+    SendFrame();
+}
+
+void Planet::SendFrame()
+{
+    if (m_client.GetHandle() == INVALID_SOCKET) return;
+    std::size_t size = m_Width * m_Height * m_BytePerPixel + MSG_HEADER_LENGTH;
+    if (m_client.SendAll(m_pFramePackage.get(), size) < size)
+    {
+        LOG_ERROR << "Send failed: " << size << std::endl;
+    }
+}
+
+bool Planet::ShouldExit()
+{    
+    /**
+     * TODO: Check if client disconnect timeout, or if client request close
+     */
+    return false;
 }
 
 void Planet::InitKeyStatus()

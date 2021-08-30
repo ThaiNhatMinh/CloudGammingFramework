@@ -23,6 +23,26 @@ int cgfGetKeyStatus(Key key)
     return myPlanet.GetKeyStatus(key);
 }
 
+void cgfFinalize()
+{
+    myPlanet.Finalize();
+}
+
+void cgfSetResolution(unsigned int width, unsigned int height)
+{
+    myPlanet.SetResolution(width, height);
+}
+
+void cgfSetFrame(const void* pData)
+{
+    myPlanet.SetFrame(pData);
+}
+
+bool cgfShouldExit()
+{
+    return myPlanet.ShouldExit();
+}
+
 LRESULT CALLBACK hWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     return S_OK;

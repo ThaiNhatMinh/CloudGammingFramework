@@ -2,6 +2,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <memory>
 
 #include "cgf/CloudGammingFramework.hh"
 #include "cgf/InputEvent.hh"
@@ -28,6 +29,10 @@ private:
     WsaSocket m_socket;
     WsaSocket m_client;
     char m_KeyStatus[512];
+    std::size_t m_Width;
+    std::size_t m_Height;
+    unsigned char m_BytePerPixel = 3;
+    std::unique_ptr<char> m_pFramePackage; 
 
 public:
     Planet() {};
@@ -49,6 +54,14 @@ public:
     void PollEvent();
 
     int GetKeyStatus(Key key);
+
+    void Finalize();
+
+    void SetResolution(std::size_t w, std::size_t h);
+
+    void SetFrame(const void* pData);
+
+    bool ShouldExit();
 private:
     /**
      * Receive event from client and put it into queue
@@ -58,5 +71,7 @@ private:
     void QueryPort();
     void OnRecv(WsaSocketInformation* sock);
     void OnAccept(WsaSocket&& newConnect) override;
+    void OnClose(WsaSocketInformation* sock) override;
     void InitKeyStatus();
+    void SendFrame();
 };

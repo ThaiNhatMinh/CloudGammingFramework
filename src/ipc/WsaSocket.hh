@@ -23,6 +23,7 @@ public:
     WsaSocket(SOCKET handle);
     WsaSocket(WsaSocket&& other);
     WsaSocket& operator=(WsaSocket&& other);
+    bool operator==(const WsaSocket& other);
     bool Open(unsigned short port);
     bool Connect(std::string ip, unsigned short port);
     bool ConnectToHost(std::string host, unsigned short port);
