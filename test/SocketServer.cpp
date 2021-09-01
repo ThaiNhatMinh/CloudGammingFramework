@@ -19,7 +19,7 @@ public:
     void OnAccept(WsaSocket&& newSocket) override
     {
         client = std::move(newSocket);
-        this->AddSocket(client, static_cast<callback>(&Server::OnSend), static_cast<callback>(&Server::OnRecv));
+        this->AddSocket(client, static_cast<SocketCallback>(&Server::OnSend), static_cast<SocketCallback>(&Server::OnRecv));
     }
 
     void OnRecv(WsaSocketInformation* sock)

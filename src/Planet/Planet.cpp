@@ -113,7 +113,7 @@ void Planet::OnAccept(WsaSocket &&newConnect)
         return;
     }
     m_client = std::move(newConnect);
-    AddSocket(m_client, nullptr, static_cast<callback>(&Planet::OnRecv));
+    AddSocket(m_client, nullptr, static_cast<SocketCallback>(&Planet::OnRecv));
 }
 
 void Planet::OnClose(WsaSocketInformation* sock)

@@ -44,16 +44,16 @@ class WsaSocketPollEvent
 protected:
     const static std::size_t MAX_BUFFER = 4096;
     struct WsaSocketInformation;
-    typedef void (WsaSocketPollEvent::*callback)(WsaSocketInformation* info);
+    typedef void (WsaSocketPollEvent::*SocketCallback)(WsaSocketInformation* info);
     struct WsaSocketInformation
     {
         const WsaSocket* socket;
         BufferStream<MAX_BUFFER> recvBuffer;
         BufferStream<MAX_BUFFER> sendBuffer;
         /** Call before send */
-        callback sendCallback;
+        SocketCallback sendCallback;
         /** Call after recvice data */
-        callback recvCallback;
+        SocketCallback recvCallback;
     };
     
 private:
@@ -65,7 +65,7 @@ private:
 public:
     virtual void OnAccept(WsaSocket&& newSocket) {};
     virtual void OnClose(WsaSocketInformation* sock) {};
-    bool AddSocket(const WsaSocket& newSocket, callback sendCallback = nullptr, callback recvCallback = nullptr);
+    bool AddSocket(const WsaSocket& newSocket, SocketCallback sendCallback = nullptr, SocketCallback recvCallback = nullptr);
     void SetExitEvent(const Event& exitEvent) { m_exit = &exitEvent; UpdateArray();};
     void PollEvent();
     void UpdateArray();

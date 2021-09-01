@@ -296,7 +296,7 @@ void WsaSocketPollEvent::UpdateArray()
     }
 }
 
-bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, callback sendCallback, callback recvCallback)
+bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback sendCallback, SocketCallback recvCallback)
 {
     if (m_sockets.size() + 1 >= WSA_MAXIMUM_WAIT_EVENTS)
     {
