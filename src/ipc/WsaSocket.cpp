@@ -213,18 +213,21 @@ void WsaSocketPollEvent::PollEvent()
     while (true)
     {
         // Wait for network events on all sockets
-        std::size_t eventTotal = m_sockets.size() + 1;
+        std::size_t eventTotal = m_sockets.size() + m_events.size();
         std::size_t Index = WSAWaitForMultipleEvents(eventTotal, EventArray, FALSE, WSA_INFINITE, FALSE);
         Index = Index - WSA_WAIT_EVENT_0;
-        if (Index == 0) break; // exit event is signal
-
-        auto sock = m_sockets.begin();
-        for (std::size_t i = 1; i < Index; i++)
+        LOG_DEBUG << " Index:" << Index << std::endl;
+        if (Index < m_events.size())
         {
-            sock = ++sock;
+            if (!(this->*m_events[Index].callback)(m_events[Index].event))
+                break;
+            continue;
         }
+
+        int IndexSocket = Index - m_events.size();
+        LOG_DEBUG << "Event total: " << eventTotal << " Index:" << Index << std::endl;
         WSANETWORKEVENTS NetworkEvents;
-        WSAEnumNetworkEvents(sock->socket->GetHandle(), EventArray[Index], &NetworkEvents);
+        WSAEnumNetworkEvents(m_sockets[IndexSocket].socket->GetHandle(), EventArray[Index], &NetworkEvents);
         // Check for FD_ACCEPT messages
         if (NetworkEvents.lNetworkEvents & FD_ACCEPT)
         {
@@ -235,7 +238,7 @@ void WsaSocketPollEvent::PollEvent()
                 break;
             }
             // Accept a new connection, and add it to the socket and event lists
-            OnAccept(accept(sock->socket->GetHandle(), NULL, NULL));
+            OnAccept(accept(m_sockets[IndexSocket].socket->GetHandle(), nullptr, nullptr));
         }
 
         // Process FD_READ notification
@@ -249,12 +252,12 @@ void WsaSocketPollEvent::PollEvent()
             }
             // Read data from the socket
             std::string buffer;
-            int numRecv = sock->socket->Recv(buffer);
+            int numRecv = m_sockets[IndexSocket].socket->Recv(buffer);
             if (numRecv != SOCKET_ERROR)
             {
-                sock->recvBuffer << buffer;
-                if (sock->recvCallback)
-                    (this->*sock->recvCallback)(&(*sock));
+                m_sockets[IndexSocket].recvBuffer << buffer;
+                if (m_sockets[IndexSocket].recvCallback)
+                    (this->*m_sockets[IndexSocket].recvCallback)(&m_sockets[IndexSocket]);
             }
         }
 
@@ -267,8 +270,8 @@ void WsaSocketPollEvent::PollEvent()
                 LastErrorWithCode(NetworkEvents.iErrorCode[FD_WRITE_BIT]);
                 break;
             }
-            if (sock->sendCallback)
-                (this->*sock->sendCallback)(&(*sock));
+            if (m_sockets[IndexSocket].sendCallback)
+                (this->*m_sockets[IndexSocket].sendCallback)(&m_sockets[IndexSocket]);
         }
 
         if (NetworkEvents.lNetworkEvents & FD_CLOSE)
@@ -278,8 +281,8 @@ void WsaSocketPollEvent::PollEvent()
                 LOG_ERROR << "FD_CLOSE failed with error:";
                 LastErrorWithCode(NetworkEvents.iErrorCode[FD_CLOSE_BIT]);
             }
-            OnClose(&(*sock));
-            sock = m_sockets.erase(sock);
+            OnClose(&m_sockets[IndexSocket]);
+            m_sockets.erase(m_sockets.begin() + IndexSocket);
             UpdateArray();
         }
     }
@@ -287,9 +290,12 @@ void WsaSocketPollEvent::PollEvent()
 
 void WsaSocketPollEvent::UpdateArray()
 {
-    std::size_t eventTotal = m_sockets.size();
-    EventArray[0] = m_exit->GetHandle();
-    int index = 1;
+    std::size_t eventTotal = m_sockets.size() + m_events.size();
+    int index = 0;
+    for (auto iter = m_events.begin(); iter != m_events.end(); iter++, index++)
+    {
+        EventArray[index] = iter->event->GetHandle();
+    }
     for (auto iter = m_sockets.begin(); iter != m_sockets.end(); iter++, index++)
     {
         EventArray[index] = iter->socket->GetEvent();
@@ -298,9 +304,9 @@ void WsaSocketPollEvent::UpdateArray()
 
 bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback sendCallback, SocketCallback recvCallback)
 {
-    if (m_sockets.size() + 1 >= WSA_MAXIMUM_WAIT_EVENTS)
+    if (m_sockets.size() + m_events.size() > WSA_MAXIMUM_WAIT_EVENTS)
     {
-        LOG_ERROR << "Reach maximmum connections\n";
+        LOG_ERROR << "Reach maximmum connections/event\n";
         return false;
     }
     WsaSocketInformation info;
@@ -308,6 +314,22 @@ bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback se
     info.sendCallback = sendCallback;
     info.recvCallback = recvCallback;
     m_sockets.push_back(info);
+    UpdateArray();
+    return true;
+}
+
+bool WsaSocketPollEvent::AddEvent(const Event& event, EventCallback callback)
+{
+    if (m_sockets.size() + m_events.size() > WSA_MAXIMUM_WAIT_EVENTS)
+    {
+        LOG_ERROR << "Reach maximmum connections/event\n";
+        return false;
+    }
+
+    EventInformation info;
+    info.event = &event;
+    info.callback = callback;
+    m_events.push_back(info);
     UpdateArray();
     return true;
 }

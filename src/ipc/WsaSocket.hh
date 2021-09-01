@@ -1,4 +1,3 @@
-#include <list>
 #include <string>
 #include <vector>
 
@@ -45,6 +44,7 @@ protected:
     const static std::size_t MAX_BUFFER = 4096;
     struct WsaSocketInformation;
     typedef void (WsaSocketPollEvent::*SocketCallback)(WsaSocketInformation* info);
+    typedef bool (WsaSocketPollEvent::*EventCallback)(const Event* info);
     struct WsaSocketInformation
     {
         const WsaSocket* socket;
@@ -55,18 +55,23 @@ protected:
         /** Call after recvice data */
         SocketCallback recvCallback;
     };
+
+    struct EventInformation
+    {
+        const Event* event;
+        EventCallback callback;
+    };
     
 private:
     WSAEVENT EventArray[WSA_MAXIMUM_WAIT_EVENTS];
-    std::list<WsaSocketInformation> m_sockets;
-    std::vector<HANDLE> m_event;
-    const Event* m_exit;
+    std::vector<WsaSocketInformation> m_sockets;
+    std::vector<EventInformation> m_events;
 
 public:
     virtual void OnAccept(WsaSocket&& newSocket) {};
     virtual void OnClose(WsaSocketInformation* sock) {};
     bool AddSocket(const WsaSocket& newSocket, SocketCallback sendCallback = nullptr, SocketCallback recvCallback = nullptr);
-    void SetExitEvent(const Event& exitEvent) { m_exit = &exitEvent; UpdateArray();};
+    bool AddEvent(const Event& event, EventCallback callback);
     void PollEvent();
     void UpdateArray();
 };
