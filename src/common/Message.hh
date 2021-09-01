@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "cgf/InputEvent.hh"
+#include "cgf/cgf.hh"
 
 enum Message
 {

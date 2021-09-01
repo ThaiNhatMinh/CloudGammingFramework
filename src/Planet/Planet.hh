@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "cgf/CloudGammingFramework.hh"
-#include "cgf/InputEvent.hh"
 #include "ipc/Event.hh"
 #include "ipc/FileMapping.hh"
 #include "ipc/WsaSocket.hh"
