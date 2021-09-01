@@ -3,9 +3,10 @@
 #include <vector>
 
 #include "common/AutoClose.hh"
+#include "common/BufferStream.hh"
 #include "common/NonCopyable.hh"
-#include "Win32.hh"
 #include "Event.hh"
+#include "Win32.hh"
 
 class WsaSocket: public NonCopyable
 {
@@ -38,15 +39,6 @@ public:
     void Release();
 };
 
-class WsaEvent
-{
-private:
-    WsaSocket::AutoCloseEvent m_event;
-
-public:
-    
-};
-
 class WsaSocketPollEvent
 {
 protected:
@@ -56,10 +48,8 @@ protected:
     struct WsaSocketInformation
     {
         const WsaSocket* socket;
-        std::size_t bytesSend;
-        std::size_t bytesRecv;
-        char sendBuffer[MAX_BUFFER];
-        char recvBuffer[MAX_BUFFER];
+        BufferStream<MAX_BUFFER> recvBuffer;
+        BufferStream<MAX_BUFFER> sendBuffer;
         /** Call before send */
         callback sendCallback;
         /** Call after recvice data */
@@ -69,6 +59,7 @@ protected:
 private:
     WSAEVENT EventArray[WSA_MAXIMUM_WAIT_EVENTS];
     std::list<WsaSocketInformation> m_sockets;
+    std::vector<HANDLE> m_event;
     const Event* m_exit;
 
 public:

@@ -88,15 +88,15 @@ void Planet::QueryPort()
 void Planet::OnRecv(WsaSocketInformation *sock)
 {
     constexpr std::size_t size = sizeof(InputEvent);
-    while (sock->bytesRecv >= MSG_INPUT_PACKAGE_SIZE)
+    while (sock->recvBuffer.Length() >= MSG_INPUT_PACKAGE_SIZE)
     {
-        MessageHeader header = ParseHeaderMsg(sock->recvBuffer);
+        sock->recvBuffer.SetCurrentPosition(0);
+        MessageHeader header;
+        sock->recvBuffer >> header;
         if (header.code == Message::MSG_INPUT)
         {
             InputEvent event;
-            std::memcpy(&event, &sock->recvBuffer[MSG_HEADER_LENGTH], size);
-            sock->bytesRecv -= MSG_INPUT_PACKAGE_SIZE;
-            std::memmove(sock->recvBuffer, &sock->recvBuffer[MSG_INPUT_PACKAGE_SIZE], sock->bytesRecv);
+            sock->recvBuffer >> event;
             m_inputEvents.push(event);
         } else
         {
@@ -107,6 +107,11 @@ void Planet::OnRecv(WsaSocketInformation *sock)
 
 void Planet::OnAccept(WsaSocket &&newConnect)
 {
+    if (m_client.GetHandle() != INVALID_SOCKET)
+    {
+        LOG_ERROR << "A client already connected\n";
+        return;
+    }
     m_client = std::move(newConnect);
     AddSocket(m_client, nullptr, static_cast<callback>(&Planet::OnRecv));
 }
@@ -120,6 +125,7 @@ void Planet::OnClose(WsaSocketInformation* sock)
     }
 
     m_client.Release();
+    LOG_DEBUG << "Client disconnected\n";
 }
 
 int Planet::GetKeyStatus(Key key)

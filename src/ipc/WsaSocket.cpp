@@ -252,8 +252,7 @@ void WsaSocketPollEvent::PollEvent()
             int numRecv = sock->socket->Recv(buffer);
             if (numRecv != SOCKET_ERROR)
             {
-                std::memcpy(sock->recvBuffer + sock->bytesRecv, buffer.data(), numRecv);
-                sock->bytesRecv += numRecv;
+                sock->recvBuffer << buffer;
                 if (sock->recvCallback)
                     (this->*sock->recvCallback)(&(*sock));
             }
@@ -270,15 +269,6 @@ void WsaSocketPollEvent::PollEvent()
             }
             if (sock->sendCallback)
                 (this->*sock->sendCallback)(&(*sock));
-            if (sock->bytesSend > 0)
-            {
-                int numSend = sock->socket->Send(sock->sendBuffer, sock->bytesSend);
-                if (numSend != SOCKET_ERROR)
-                {
-                    sock->bytesSend -= numSend;
-                    std::memmove(&sock->sendBuffer + numSend, sock->sendBuffer, sock->bytesSend);
-                }
-            }
         }
 
         if (NetworkEvents.lNetworkEvents & FD_CLOSE)
@@ -315,8 +305,6 @@ bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, callback sendCall
     }
     WsaSocketInformation info;
     info.socket = &newSocket;
-    info.bytesRecv = 0;
-    info.bytesSend = 0;
     info.sendCallback = sendCallback;
     info.recvCallback = recvCallback;
     m_sockets.push_back(info);

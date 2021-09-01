@@ -1,4 +1,6 @@
+#include "common/Message.hh"
 #include "ipc/WsaSocket.hh"
+#include "cgf/cgf.hh"
 #include <iostream>
 #include <string>
 
@@ -12,14 +14,21 @@ int main()
         return 0;
     }
 
+    BufferStream1KB stream;
+    InputEvent event;
+    event.key.key = Key::KEY_A;
+    event.key.action = Action::PRESSING;
+    stream << event;
+    static char buffer[64];
+    CreateInputMsg(buffer, 64, event);
     while (true)
     {
         std::string msg;
         std::cin >> msg;
         std::size_t numSend = 0;
-        while (numSend < msg.length())
+        while (numSend < MSG_INPUT_PACKAGE_SIZE)
         {
-            numSend += sock.SendAll(msg.data(), msg.length());
+            numSend += sock.SendAll(buffer, MSG_INPUT_PACKAGE_SIZE);
         }
         if (msg == "EXIT") break;
         std::cout << "SendALL" << std::endl;
