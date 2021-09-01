@@ -1,6 +1,7 @@
 #pragma once
 #include <list>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 #include "ipc/Event.hh"
@@ -22,6 +23,7 @@ public:
     }GameRegister;
 
 private:
+    std::mutex m_lockLaunchGame;
     Event m_launchGame;
     FileMapping m_launchData;
     std::vector<GameParameter> m_gameDb;

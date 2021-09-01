@@ -198,6 +198,7 @@ void Sun::OnRecvFromClient(WsaSocketInformation* sock)
 
 void Sun::LaunchGame(const WsaSocket* client, GameId id)
 {
+    std::unique_lock<std::mutex> lock(m_lockLaunchGame);
     LOG_DEBUG << "Launching game " << id << std::endl;
     ClientId clientId = FindClient(client);
     StreamPort port = FindExistRunningGame(clientId);
