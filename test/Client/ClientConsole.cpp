@@ -1,8 +1,8 @@
 #include "common/Message.hh"
 #include "glfw/GlfwWindow.hh"
 #include "ipc/WsaSocket.hh"
-#include "cgf/InputEvent.hh"
 #include "cgf/CloudGammingFramework.hh"
+#include "common/BufferStream.hh"
 
 int main(int argc, char** argv)
 {
