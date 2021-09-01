@@ -71,6 +71,7 @@ private:
     void OnRecv(WsaSocketInformation* sock);
     void OnAccept(WsaSocket&& newConnect) override;
     void OnClose(WsaSocketInformation* sock) override;
+    bool OnFinalize(const Event* sock);
     void InitKeyStatus();
     void SendFrame();
 };

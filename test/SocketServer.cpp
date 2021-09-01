@@ -8,18 +8,27 @@ class Server : public WsaSocketPollEvent
 {
     Event event;
     WsaSocket client;
+    WsaSocket sock;
 public:
     Server()
     {
-        if (!event.Open("Local\\AAA"))
+        if (!sock.Open(4568) || !event.Create("Local\\AAA"))
         {
             throw std::exception();
         }
+        AddEvent(event, static_cast<EventCallback>(&Server::OnExit));
+        AddSocket(sock);
     }
+
     void OnAccept(WsaSocket&& newSocket) override
     {
         client = std::move(newSocket);
         this->AddSocket(client, static_cast<SocketCallback>(&Server::OnSend), static_cast<SocketCallback>(&Server::OnRecv));
+    }
+
+    bool OnExit(const Event* event)
+    {
+        return false;
     }
 
     void OnRecv(WsaSocketInformation* sock)
@@ -60,15 +69,8 @@ public:
 int main()
 {
     WsaSocket::Init();
-    WsaSocket sock;
-    Event event;
-    if (!sock.Open(4568) || !event.Create("Local\\AAA"))
-    {
-        std::cout << "Failed to open\n";
-    }
+    
     Server server;
-    server.SetExitEvent(std::move(event));
-    server.AddSocket(sock);
     std::cout << "Start\n";
     server.PollEvent();
     return 0;

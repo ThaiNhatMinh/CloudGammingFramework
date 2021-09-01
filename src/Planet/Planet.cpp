@@ -25,7 +25,7 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
         LOG_ERROR << "Open port failed\n";
         return false;
     }
-    SetExitEvent(m_finalize);
+    AddEvent(m_finalize, static_cast<EventCallback>(&Planet::OnFinalize));
     AddSocket(m_socket);
     m_pollEvent = std::thread(&Planet::InternalThread, this);
     m_pollEvent.detach();
@@ -174,6 +174,11 @@ bool Planet::ShouldExit()
     /**
      * TODO: Check if client disconnect timeout, or if client request close
      */
+    return false;
+}
+
+bool Planet::OnFinalize(const Event* sock)
+{
     return false;
 }
 

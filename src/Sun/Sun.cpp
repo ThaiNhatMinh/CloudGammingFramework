@@ -69,8 +69,10 @@ bool Sun::LaunchGame(GameId id)
         GetCurrentDirectory(MAX_PATH, dir);
         directory = dir;
     }
+    int mod = CREATE_DEFAULT_ERROR_MODE;
+    mod |= CREATE_NEW_CONSOLE;
     bool ret = CreateProcess(NULL, program,
-        NULL, NULL, FALSE, CREATE_DEFAULT_ERROR_MODE | CREATE_NEW_CONSOLE, NULL, directory.c_str(),
+        NULL, NULL, FALSE, mod, NULL, directory.c_str(),
         &startupInfo, &processInformation);
     if (!ret) {
         LOG_ERROR << "Game Start failed: ";
