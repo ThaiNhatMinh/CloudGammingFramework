@@ -119,7 +119,7 @@ StreamPort Sun::LaunchGame(GameId id)
     instance.ProcessHandle = processInformation.hProcess;
     instance.status = GameStatus::STARTING;
     m_gameInstances[port] = instance;
-
+    // TODO: Tracking status of process
     return port;
 }
 

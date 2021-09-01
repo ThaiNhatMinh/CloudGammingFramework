@@ -126,6 +126,7 @@ void Planet::OnClose(WsaSocketInformation* sock)
 
     m_client.Release();
     LOG_DEBUG << "Client disconnected\n";
+    // TODO: Check timeout to stop game
 }
 
 int Planet::GetKeyStatus(Key key)
