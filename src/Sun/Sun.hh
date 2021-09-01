@@ -7,7 +7,6 @@
 #include "ipc/FileMapping.hh"
 #include "ipc/WsaSocket.hh"
 #include "common/Configuration.hh"
-#include "Define.hh"
 #include "GameInstance.hh"
 
 struct GameParameter;
@@ -29,16 +28,18 @@ private:
     Configuration* m_pConfig;
     std::map<StreamPort, GameInstance> m_gameInstances;
     WsaSocket m_socket;
-    std::list<WsaSocket> m_clients;
+    std::list<std::pair<WsaSocket, ClientId>> m_clients;
 public:
     Sun(Configuration* config, const std::vector<GameParameter>& gamedb);
 
 private:
     const GameParameter* FindGame(GameId id);
     void OnAccept(WsaSocket&& newConnect) override;
+    void OnClose(WsaSocketInformation* sock) override;
     void OnRecvFromClient(WsaSocketInformation* sock);
     void LaunchGame(const WsaSocket* client, GameId id);
     StreamPort LaunchGame(GameId id);
     StreamPort FindFreePort();
-    StreamPort FindExistRunningGame();
+    StreamPort FindExistRunningGame(ClientId id);
+    ClientId FindClient(const WsaSocket* client);
 };

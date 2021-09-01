@@ -8,6 +8,5 @@ struct GameInstance
     GameId Id = INVALID_GAMEID;
     HANDLE ProcessHandle = INVALID_HANDLE_VALUE;
     GameStatus status;
-    const WsaSocket* client = nullptr;
     ClientId clientId = INVALID_CLIENTID;
 };

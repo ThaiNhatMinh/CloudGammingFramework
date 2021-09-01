@@ -6,11 +6,11 @@
 
 int main(int argc, char** argv)
 {
-    if (!cgfClientConnect("127.0.0.1", 8989))
+    if (!cgfClientConnect(123, "127.0.0.1", 8989))
     {
         return -1;
     }
-    Sleep(100);
+    // Sleep(100);
     cfgClientRequestGame(1);
 
     Window window(500, 500, "AAA");

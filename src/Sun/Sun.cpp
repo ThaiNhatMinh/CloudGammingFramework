@@ -150,8 +150,21 @@ StreamPort Sun::FindFreePort()
 
 void Sun::OnAccept(WsaSocket&& newConnect)
 {
-    m_clients.push_back(std::move(newConnect));
-    AddSocket(m_clients.back(), nullptr, static_cast<SocketCallback>(&Sun::OnRecvFromClient));
+    // TODO: Start timer to waiting for MSG_INIT
+    m_clients.emplace_back(std::move(newConnect), INVALID_CLIENTID);
+    AddSocket(m_clients.back().first, nullptr, static_cast<SocketCallback>(&Sun::OnRecvFromClient));
+}
+
+void Sun::OnClose(WsaSocketInformation* sock)
+{
+    for (auto iter = m_clients.begin(); iter != m_clients.end(); iter++)
+    {
+        if (iter->first.GetHandle() == sock->socket->GetHandle())
+        {
+            m_clients.erase(iter);
+            break;
+        }
+    }
 }
 
 void Sun::OnRecvFromClient(WsaSocketInformation* sock)
@@ -165,6 +178,18 @@ void Sun::OnRecvFromClient(WsaSocketInformation* sock)
         GameId id;
         sock->recvBuffer >> id;
         LaunchGame(sock->socket, id);
+    } else if (header.code == Message::MSG_INIT && sock->recvBuffer.Length() >= sizeof(ClientId))
+    {
+        ClientId id;
+        sock->recvBuffer >> id;
+        for (auto& el : m_clients)
+        {
+            if (el.first == *sock->socket)
+            {
+                el.second = id;
+                break;
+            }
+        }
     } else
     {
         LOG_ERROR << "Unknow code: " << header.code << std::endl;
@@ -174,7 +199,15 @@ void Sun::OnRecvFromClient(WsaSocketInformation* sock)
 void Sun::LaunchGame(const WsaSocket* client, GameId id)
 {
     LOG_DEBUG << "Launching game " << id << std::endl;
-    StreamPort port = LaunchGame(id);
+    ClientId clientId = FindClient(client);
+    StreamPort port = FindExistRunningGame(clientId);
+    if (port == INVALID_PORT)
+    {
+        port = LaunchGame(id);
+    } else if (m_gameInstances[port].Id != id)
+    {
+        LOG_ERROR << "Client request game: " << id << " but current running game: " << m_gameInstances[port].Id << std::endl;
+    }
     BufferStream1KB stream;
     MessageHeader header;
     header.code = Message::MSG_START_GAME_RESP;
@@ -188,7 +221,7 @@ void Sun::LaunchGame(const WsaSocket* client, GameId id)
     {
         status = 1;
         stream << port;
-        m_gameInstances[port].client = client;
+        m_gameInstances[port].clientId = clientId;
     }
 
     if (!client->SendAll(stream.Get(), stream.Length()))
@@ -196,3 +229,29 @@ void Sun::LaunchGame(const WsaSocket* client, GameId id)
         LOG_ERROR << "Send all failed\n";
     }
 }
+
+ClientId Sun::FindClient(const WsaSocket* client)
+{
+    for (auto& el : m_clients)
+    {
+        if (el.first == *client)
+        {
+            return el.second;
+        }
+    }
+    return INVALID_CLIENTID;
+}
+
+StreamPort Sun::FindExistRunningGame(ClientId clientId)
+{
+    for(auto& el : m_gameInstances)
+    {
+        if (el.second.clientId == clientId)
+        {
+            return el.first;
+        }
+    }
+
+    return INVALID_PORT;
+}
+

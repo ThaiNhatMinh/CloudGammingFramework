@@ -2,9 +2,9 @@
 
 static Satellite meowww;
 
-bool cgfClientConnect(const char* ip, unsigned short port)
+bool cgfClientConnect(ClientId id, const char* ip, unsigned short port)
 {
-    return meowww.Connect(ip, port);
+    return meowww.Connect(id, ip, port);
 }
 
 bool cfgClientRequestGame(GameId id)

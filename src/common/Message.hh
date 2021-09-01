@@ -4,6 +4,7 @@
 
 enum Message
 {
+    MSG_INIT,
     MSG_INPUT,
     MSG_FRAME,
     MSG_RESOLUTION,

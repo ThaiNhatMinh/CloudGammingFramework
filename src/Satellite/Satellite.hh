@@ -23,10 +23,11 @@ private:
     std::string m_serverIp;
     std::thread m_thread;
     Event m_signal;
+    ClientId m_id;
 
 public:
     Satellite() { WsaSocket::Init(); }
-    bool Connect(const std::string& ip, unsigned short port);
+    bool Connect(ClientId id, const std::string& ip, unsigned short port);
     bool RequestGame(GameId id);
     bool SendInput(InputEvent event);
     void Finalize();

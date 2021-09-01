@@ -2,7 +2,7 @@
 #include "common/BufferStream.hh"
 #include "common/Message.hh"
 
-bool Satellite::Connect(const std::string& ip, unsigned short port)
+bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
 {
     std::stringstream ss;
     ss << this;
@@ -11,10 +11,22 @@ bool Satellite::Connect(const std::string& ip, unsigned short port)
         return false;
     }
 
+    BufferStream1KB stream;
+    MessageHeader header;
+    header.code = Message::MSG_INIT;
+    stream << header;
+    stream << id;
+    if (m_serverSocket.SendAll(stream.Get(), stream.Length()) == SOCKET_ERROR)
+    {
+        LOG_ERROR << "Send error\n";
+        return false;
+    }
+
     m_serverIp = ip;
     AddSocket(m_serverSocket, nullptr, static_cast<SocketCallback>(&Satellite::OnRecvServer));
     AddEvent(m_signal, static_cast<EventCallback>(&Satellite::OnFinalize));
     m_thread = std::thread(&Satellite::InternalThread, this);
+    m_signal.Wait(100);
     return true;
 }
 
@@ -87,6 +99,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
 
 void Satellite::InternalThread()
 {
+    m_signal.Signal();
     WsaSocketPollEvent::PollEvent();
 }
 
