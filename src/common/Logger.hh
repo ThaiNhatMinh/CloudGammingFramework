@@ -15,7 +15,7 @@ public:
 #define LOG std::cout
 #define LOG_DEBUG std::cout << "[DEBUG]:"
 #define LOG_WARN std::cout << "[WARN]:"
-#define LOG_ERROR std::cout << "[ERROR]:"
+#define LOG_ERROR std::cout << __FUNCTION__ "[ERROR]:"
 #define LOG_INFO std::cout << "[INFO]:"
 #define LOG_API std::cout << "[API]:"
 #define TRACE std::cout << __FUNCTION__ ":"  << __LINE__ << "\n"

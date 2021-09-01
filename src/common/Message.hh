@@ -9,7 +9,9 @@ enum Message
     MSG_RESOLUTION,
     MSG_REQUEST_RESOLUTION,
     MSG_START_GAME,
+    MSG_START_GAME_RESP,
     MSG_STOP_GAME,
+    MSG_GAME_PORT,
     MSG_RECONNECT
 };
 
@@ -25,6 +27,7 @@ struct MessageHeader
  */
 constexpr std::size_t MSG_HEADER_LENGTH = sizeof(MessageHeader);
 constexpr std::size_t MSG_INPUT_PACKAGE_SIZE = MSG_HEADER_LENGTH + sizeof(InputEvent);
+constexpr std::size_t MSG_STARTGAME_PACKAGE_SIZE = MSG_HEADER_LENGTH + sizeof(GameId);
 
 MessageHeader CreateHeaderMsg(Message code);
 MessageHeader ParseHeaderMsg(const char* pBuffer);

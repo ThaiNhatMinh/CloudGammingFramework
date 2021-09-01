@@ -1,5 +1,6 @@
 #include <exception>
 #include "common/Logger.hh"
+#include "common/Message.hh"
 #include "common/Module.hh"
 #include "ipc/Named.hh"
 #include "GameParameter.hh"
@@ -8,6 +9,8 @@
 
 const std::string PORT_RANG_START = "PortRangeStart";
 const std::string PORT_RANG_END = "PortRangeEnd";
+const std::string PORT = "Port";
+
 std::string GetDir(const std::string& filePath)
 {
     std::size_t pos = filePath.find_last_of("\\/");
@@ -24,7 +27,15 @@ Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pCo
     {
         throw std::exception("Create failed");
     }
+    WsaSocket::Init();
 
+    unsigned short port = config->GetValue(PORT, 8901);
+    if (!m_socket.Open(port))
+    {
+        throw std::exception("Listen on port failed");
+    }
+
+    AddSocket(m_socket);
     std::size_t startPort = config->GetValue(PORT_RANG_START, 1000);
     std::size_t endPort = config->GetValue(PORT_RANG_END, 1000);
     for (std::size_t i = startPort; i < endPort; i++)
@@ -35,7 +46,7 @@ Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pCo
     LOG_DEBUG << "Init done\n";
 }
 
-bool Sun::LaunchGame(GameId id)
+StreamPort Sun::LaunchGame(GameId id)
 {
     /**
      * 1. Get game information from id
@@ -47,13 +58,13 @@ bool Sun::LaunchGame(GameId id)
     if (gameParam == nullptr)
     {
         LOG_ERROR << "Game with id " << id << " not found" << std::endl;
-        return false;
+        return INVALID_PORT;
     }
     StreamPort port = FindFreePort();
     if (port == INVALID_PORT)
     {
         LOG_ERROR << "No free port found" << std::endl;
-        return false;
+        return INVALID_PORT;
     }
 
     STARTUPINFO startupInfo = { sizeof(startupInfo) };
@@ -77,13 +88,17 @@ bool Sun::LaunchGame(GameId id)
     if (!ret) {
         LOG_ERROR << "Game Start failed: ";
         LastError();
-        return false;
+        return INVALID_PORT;
+    }
+    if (WaitForInputIdle(processInformation.hProcess, 500) != 0)
+    {
+        LOG_ERROR << "Waiting for process idle failed\n";
     }
 
     if (!m_launchGame.Wait(gameParam->RegisterTimeOut))
     {
         LOG_ERROR << "Waiting for register timeout\n";
-        return false;
+        return INVALID_PORT;
     }
     GameRegister info;
     info.port = port;
@@ -95,16 +110,17 @@ bool Sun::LaunchGame(GameId id)
             LOG_ERROR << "Failed to terminate process:" << std::endl;
             LastError();
         }
-        return false;
+        return INVALID_PORT;
     }
 
     m_launchGame.Signal();
     GameInstance instance;
     instance.Id = gameParam->Id;
     instance.ProcessHandle = processInformation.hProcess;
+    instance.status = GameStatus::STARTING;
     m_gameInstances[port] = instance;
 
-    return true;
+    return port;
 }
 
 const GameParameter* Sun::FindGame(GameId id)
@@ -130,4 +146,53 @@ StreamPort Sun::FindFreePort()
     }
 
     return INVALID_PORT;
+}
+
+void Sun::OnAccept(WsaSocket&& newConnect)
+{
+    m_clients.push_back(std::move(newConnect));
+    AddSocket(m_clients.back(), nullptr, static_cast<SocketCallback>(&Sun::OnRecvFromClient));
+}
+
+void Sun::OnRecvFromClient(WsaSocketInformation* sock)
+{
+    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
+    sock->recvBuffer.SetCurrentPosition(0);
+    MessageHeader header;
+    sock->recvBuffer >> header;
+    if (header.code == Message::MSG_START_GAME && sock->recvBuffer.Length() >= sizeof(GameId))
+    {
+        GameId id;
+        sock->recvBuffer >> id;
+        LaunchGame(sock->socket, id);
+    } else
+    {
+        LOG_ERROR << "Unknow code: " << header.code << std::endl;
+    }
+}
+
+void Sun::LaunchGame(const WsaSocket* client, GameId id)
+{
+    LOG_DEBUG << "Launching game " << id << std::endl;
+    StreamPort port = LaunchGame(id);
+    BufferStream1KB stream;
+    MessageHeader header;
+    header.code = Message::MSG_START_GAME_RESP;
+    stream << header;
+    StreamPort status;
+    if (port == INVALID_PORT)
+    {
+        status = INVALID_PORT;
+        stream << status;
+    } else
+    {
+        status = 1;
+        stream << port;
+        m_gameInstances[port].client = client;
+    }
+
+    if (!client->SendAll(stream.Get(), stream.Length()))
+    {
+        LOG_ERROR << "Send all failed\n";
+    }
 }

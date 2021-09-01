@@ -94,7 +94,7 @@ bool WsaSocket::Connect(std::string ip, USHORT port)
         return false;
     }
     AutoCloseEvent event = WSACreateEvent();
-    if (WSAEventSelect(handle.get(), event.get(), FD_ACCEPT | FD_CLOSE) != 0)
+    if (WSAEventSelect(handle.get(), event.get(), FD_READ | FD_WRITE | FD_CLOSE) != 0)
     {
         LASTSOCKETERROR
         return false;
@@ -136,7 +136,7 @@ bool WsaSocket::ConnectToHost(std::string host, USHORT port)
     if (handle ==INVALID_SOCKET) return false;
     m_handle = handle;
     AutoCloseEvent event = WSACreateEvent();
-    if (WSAEventSelect(handle, event.get(), FD_ACCEPT | FD_CLOSE) != 0)
+    if (WSAEventSelect(handle, event.get(), FD_READ | FD_WRITE | FD_CLOSE) != 0)
     {
         LASTSOCKETERROR
         return false;
@@ -209,23 +209,21 @@ void WsaSocket::Release()
 
 void WsaSocketPollEvent::PollEvent()
 {
-    UpdateArray();
     while (true)
     {
         // Wait for network events on all sockets
-        std::size_t eventTotal = m_sockets.size() + m_events.size();
+        std::size_t eventSize = m_events.size();
+        std::size_t eventTotal = m_sockets.size() + eventSize;
         std::size_t Index = WSAWaitForMultipleEvents(eventTotal, EventArray, FALSE, WSA_INFINITE, FALSE);
         Index = Index - WSA_WAIT_EVENT_0;
-        LOG_DEBUG << " Index:" << Index << std::endl;
-        if (Index < m_events.size())
+        if (Index < eventSize)
         {
             if (!(this->*m_events[Index].callback)(m_events[Index].event))
                 break;
             continue;
         }
 
-        int IndexSocket = Index - m_events.size();
-        LOG_DEBUG << "Event total: " << eventTotal << " Index:" << Index << std::endl;
+        int IndexSocket = Index - eventSize;
         WSANETWORKEVENTS NetworkEvents;
         WSAEnumNetworkEvents(m_sockets[IndexSocket].socket->GetHandle(), EventArray[Index], &NetworkEvents);
         // Check for FD_ACCEPT messages
