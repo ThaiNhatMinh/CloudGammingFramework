@@ -23,7 +23,7 @@ public:
     void OnAccept(WsaSocket&& newSocket) override
     {
         client = std::move(newSocket);
-        this->AddSocket(client, static_cast<SocketCallback>(&Server::OnSend), static_cast<SocketCallback>(&Server::OnRecv));
+        this->AddSocket(client, static_cast<SocketCallback>(&Server::OnRecv));
     }
 
     bool OnExit(const Event* event)

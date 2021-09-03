@@ -11,7 +11,10 @@ int main(int argc, char** argv)
         return -1;
     }
     // Sleep(100);
-    cfgClientRequestGame(1);
+    if (!cfgClientRequestGame(1))
+    {
+        return -1;
+    }
 
     Window window(500, 500, "AAA");
     window.EnableVsync(true);
