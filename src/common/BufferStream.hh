@@ -15,10 +15,7 @@ public:
     template<class type>
     BufferStream& operator>>(type& out)
     {
-        std::size_t size = sizeof(type);
-        std::memcpy(&out, &m_pBuffer[m_currentPosition], size);
-        std::memmove(&m_pBuffer[m_currentPosition], &m_pBuffer[m_currentPosition] + size, m_length - m_currentPosition - size);
-        m_length -= size;
+        Extract(&out, sizeof(type));
         return *this;
     }
 
@@ -31,9 +28,15 @@ public:
         m_length += size;
         return *this;
     }
+
     template<>
     inline BufferStream& operator<<(const std::string& in)
     {
+        if (in.length() + m_length > length)
+        {
+            LOG_ERROR << "Not enough buffer for " << in.length() + m_length << " byte, buffer size is " << length << std::endl;
+            throw std::exception("Not enough buffer for");
+        }
         std::memcpy(&m_pBuffer[m_currentPosition], in.data(), in.length());
         m_currentPosition += in.length();
         m_length += in.length();
@@ -73,6 +76,13 @@ public:
     char* Get()
     {
         return m_pBuffer;
+    }
+
+    void Extract(void* pBuffer, std::size_t extractLength)
+    {
+        std::memcpy(pBuffer, &m_pBuffer[m_currentPosition], extractLength);
+        std::memmove(&m_pBuffer[m_currentPosition], &m_pBuffer[m_currentPosition] + extractLength, m_length - m_currentPosition - extractLength);
+        m_length -= extractLength;
     }
 };
 
