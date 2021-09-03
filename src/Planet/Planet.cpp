@@ -113,7 +113,22 @@ void Planet::OnAccept(WsaSocket &&newConnect)
         return;
     }
     m_client = std::move(newConnect);
-    AddSocket(m_client, nullptr, static_cast<SocketCallback>(&Planet::OnRecv));
+    AddSocket(m_client, static_cast<SocketCallback>(&Planet::OnRecv));
+    
+    if (m_Width != 0)
+    {
+        BufferStream1KB stream;
+        MessageHeader header;
+        header.code = Message::MSG_RESOLUTION;
+        stream << header << m_Width << m_Height << m_BytePerPixel;
+        if (m_client.SendAll(stream.Get(), stream.Length()) < stream.Length())
+        {
+            LOG_ERROR << "Send error\n";
+        }
+    } else
+    {
+        LOG_ERROR << "Width is not set\n";
+    }
 }
 
 void Planet::OnClose(WsaSocketInformation* sock)
