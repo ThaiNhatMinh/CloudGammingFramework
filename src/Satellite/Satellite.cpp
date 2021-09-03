@@ -23,10 +23,12 @@ bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
     }
 
     m_serverIp = ip;
-    AddSocket(m_serverSocket, nullptr, static_cast<SocketCallback>(&Satellite::OnRecvServer));
+    AddSocket(m_serverSocket, static_cast<SocketCallback>(&Satellite::OnRecvServer));
     AddEvent(m_signal, static_cast<EventCallback>(&Satellite::OnFinalize));
     m_thread = std::thread(&Satellite::InternalThread, this);
     m_signal.Wait(100);
+    m_bIsReceivingFrame = false;
+    m_currentFrame.length = 0;
     return true;
 }
 
@@ -40,7 +42,6 @@ bool Satellite::RequestGame(GameId id)
         LOG_ERROR << "Send error\n";
         return false;
     }
-    // TODO: Check if client already start game
     return true;
 }
 
@@ -91,10 +92,44 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
 {
     if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
     sock->recvBuffer.SetCurrentPosition(0);
+    if (m_bIsReceivingFrame)
+    {
+        std::size_t size = m_gameWidth * m_gameHeight * m_bytePerPixel;
+        std::size_t byteRemain = size - m_currentFrame.length;
+        std::size_t byteToCopy = sock->recvBuffer.Length();
+        if (byteToCopy > byteRemain) byteToCopy = byteRemain;
+        sock->recvBuffer.Extract(m_currentFrame.data.get() + m_currentFrame.length, byteToCopy);
+        m_currentFrame.length += byteToCopy;
+        if (m_currentFrame.length == size)
+        {
+            m_frames.PushBack(m_currentFrame.data.get());
+            m_currentFrame.length = 0;
+            m_bIsReceivingFrame = false;
+        }
+        return;
+    }
+
     MessageHeader header;
     sock->recvBuffer >> header;
-    // if (header.code == Message::MSG_RESOLUTION && )
-    LOG_DEBUG << header.code << std::endl;
+    if (header.code == Message::MSG_RESOLUTION && sock->recvBuffer.Length() >= 2 * sizeof(int))
+    {
+        int w, h;
+        char bpp;
+        sock->recvBuffer >> w >> h >> bpp;
+        m_gameWidth = w;
+        m_gameHeight = h;
+        m_bytePerPixel = bpp;
+        LOG_DEBUG << "Message::MSG_RESOLUTION: " << w << " " << h << " " << bpp << std::endl;
+        m_frames.Init(20, m_gameWidth * m_gameHeight * m_bytePerPixel);
+        m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
+    } else if (header.code == Message::MSG_FRAME)
+    {
+        m_bIsReceivingFrame = true;
+    } else
+    {
+        LOG_DEBUG << "Unknow code " << header.code << std::endl;
+    }
+    sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
 }
 
 void Satellite::InternalThread()
