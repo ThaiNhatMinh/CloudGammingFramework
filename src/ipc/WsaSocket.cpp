@@ -152,7 +152,7 @@ int WsaSocket::Send(const void* buffer, int length) const
     return send(m_handle.get(), static_cast<const char*>(buffer), length, 0);
 }
 
-int WsaSocket::SendAll(const void* buffer, int length) const
+std::size_t WsaSocket::SendAll(const void* buffer, int length) const
 {
     int sent = 0;
     int bufferLength = length;
@@ -268,8 +268,7 @@ void WsaSocketPollEvent::PollEvent()
                 LastErrorWithCode(NetworkEvents.iErrorCode[FD_WRITE_BIT]);
                 break;
             }
-            if (m_sockets[IndexSocket].sendCallback)
-                (this->*m_sockets[IndexSocket].sendCallback)(&m_sockets[IndexSocket]);
+            LOG_DEBUG << "Socket " << m_sockets[IndexSocket].socket->GetHandle() << " is writeable\n";
         }
 
         if (NetworkEvents.lNetworkEvents & FD_CLOSE)
@@ -300,7 +299,7 @@ void WsaSocketPollEvent::UpdateArray()
     }
 }
 
-bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback sendCallback, SocketCallback recvCallback)
+bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback)
 {
     if (m_sockets.size() + m_events.size() > WSA_MAXIMUM_WAIT_EVENTS)
     {
@@ -309,7 +308,6 @@ bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback se
     }
     WsaSocketInformation info;
     info.socket = &newSocket;
-    info.sendCallback = sendCallback;
     info.recvCallback = recvCallback;
     m_sockets.push_back(info);
     UpdateArray();

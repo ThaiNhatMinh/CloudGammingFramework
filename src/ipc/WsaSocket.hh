@@ -30,7 +30,7 @@ public:
     bool ConnectToHost(std::string host, unsigned short port);
 
     int Send(const void* buffer, int length) const;
-    int SendAll(const void* buffer, int length) const;
+    std::size_t SendAll(const void* buffer, int length) const;
     int Recv(std::string& buffer) const;
 
     WSAEVENT GetEvent() const { return m_event.get(); };
@@ -42,7 +42,7 @@ public:
 class WsaSocketPollEvent
 {
 protected:
-    const static std::size_t MAX_BUFFER = 4096;
+    const static std::size_t MAX_BUFFER = 10240;
     struct WsaSocketInformation;
     typedef void (WsaSocketPollEvent::*SocketCallback)(WsaSocketInformation* info);
     typedef bool (WsaSocketPollEvent::*EventCallback)(const Event* info);
@@ -50,9 +50,6 @@ protected:
     {
         const WsaSocket* socket;
         BufferStream<MAX_BUFFER> recvBuffer;
-        BufferStream<MAX_BUFFER> sendBuffer;
-        /** Call before send */
-        SocketCallback sendCallback;
         /** Call after recvice data */
         SocketCallback recvCallback;
     };
@@ -71,7 +68,7 @@ private:
 public:
     virtual void OnAccept(WsaSocket&& newSocket) {};
     virtual void OnClose(WsaSocketInformation* sock) {};
-    bool AddSocket(const WsaSocket& newSocket, SocketCallback sendCallback = nullptr, SocketCallback recvCallback = nullptr);
+    bool AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback = nullptr);
     bool AddEvent(const Event& event, EventCallback callback);
     void PollEvent();
     void UpdateArray();
