@@ -33,6 +33,7 @@ private:
     std::list<std::pair<WsaSocket, ClientId>> m_clients;
 public:
     Sun(Configuration* config, const std::vector<GameParameter>& gamedb);
+    ~Sun();
 
 private:
     const GameParameter* FindGame(GameId id);

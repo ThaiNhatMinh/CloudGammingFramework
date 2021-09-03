@@ -46,6 +46,17 @@ Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pCo
     LOG_DEBUG << "Init done\n";
 }
 
+Sun::~Sun()
+{
+    for (auto& el : m_gameInstances)
+    {
+       if (el.second.Id != INVALID_GAMEID)
+       {
+           TerminateProcess(el.second.ProcessHandle, -3);
+       }
+    }
+}
+
 StreamPort Sun::LaunchGame(GameId id)
 {
     /**
@@ -119,6 +130,7 @@ StreamPort Sun::LaunchGame(GameId id)
     instance.ProcessHandle = processInformation.hProcess;
     instance.status = GameStatus::STARTING;
     m_gameInstances[port] = instance;
+    LOG_INFO << "Success launch game " << id << std::endl;
     // TODO: Tracking status of process
     return port;
 }
@@ -152,7 +164,7 @@ void Sun::OnAccept(WsaSocket&& newConnect)
 {
     // TODO: Start timer to waiting for MSG_INIT
     m_clients.emplace_back(std::move(newConnect), INVALID_CLIENTID);
-    AddSocket(m_clients.back().first, nullptr, static_cast<SocketCallback>(&Sun::OnRecvFromClient));
+    AddSocket(m_clients.back().first, static_cast<SocketCallback>(&Sun::OnRecvFromClient));
 }
 
 void Sun::OnClose(WsaSocketInformation* sock)
