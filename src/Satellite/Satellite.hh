@@ -1,8 +1,11 @@
+#pragma once
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
-#include "cgf/CloudGammingFramework.hh"
+#include "cgf/cgf.hh"
+#include "cgf/CloudGammingFrameworkClient.hh"
 #include "ipc/Event.hh"
 #include "ipc/WsaSocket.hh"
 #include "Frames.hh"
@@ -39,13 +42,20 @@ private:
     bool m_bIsReceivingFrame;
     Frame m_currentFrame;
     Frames m_frames;
+    cgfResolutionfun m_resFunc;
+    cgfFramefun m_frameFunc;
+    std::vector<Event> m_events;
+    HANDLE m_handle[MAXIMUM_WAIT_OBJECTS];
 
 public:
     Satellite(): m_bIsReceivingFrame(false) { WsaSocket::Init(); }
+    bool Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc);
     bool Connect(ClientId id, const std::string& ip, unsigned short port);
     bool RequestGame(GameId id);
     bool SendInput(InputEvent event);
     void Finalize();
+    bool PollEvent(std::size_t timeout);
+
 private:
     void OnRecvServer(WsaSocketInformation* sock);
     void OnRecvGame(WsaSocketInformation* sock);

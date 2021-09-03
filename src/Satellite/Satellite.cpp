@@ -2,6 +2,25 @@
 #include "common/BufferStream.hh"
 #include "common/Message.hh"
 
+bool Satellite::Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc)
+{
+    std::stringstream ss;
+    ss << this;
+    m_resFunc = resFunc;
+    m_frameFunc = frameFunc;
+    Event resEvent, frameEvent;
+    if (!resEvent.Create("Local\\ResEvent" + ss.str()) || !frameEvent.Create("Local\\FraneEvent" + ss.str()))
+    {
+        return false;
+    }
+    m_events.push_back(std::move(resEvent));
+    m_events.push_back(std::move(frameEvent));
+    m_handle[0] = m_events[0].GetHandle();
+    m_handle[1] = m_events[1].GetHandle();
+    return true;
+}
+
+
 bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
 {
     std::stringstream ss;
@@ -105,6 +124,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
             m_frames.PushBack(m_currentFrame.data.get());
             m_currentFrame.length = 0;
             m_bIsReceivingFrame = false;
+            m_events[1].Signal();
         }
         return;
     }
@@ -122,6 +142,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
         LOG_DEBUG << "Message::MSG_RESOLUTION: " << w << " " << h << " " << bpp << std::endl;
         m_frames.Init(20, m_gameWidth * m_gameHeight * m_bytePerPixel);
         m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
+        m_events[0].Signal();
     } else if (header.code == Message::MSG_FRAME)
     {
         m_bIsReceivingFrame = true;
@@ -151,4 +172,22 @@ void Satellite::Finalize()
 bool Satellite::OnFinalize(const Event* event)
 {
     return false;
+}
+
+bool Satellite::PollEvent(std::size_t timeout)
+{
+    DWORD index = WaitForMultipleObjects(m_events.size(), m_handle, false, timeout);
+    if (index == WAIT_TIMEOUT || index == WAIT_FAILED) return false;
+    index -= WAIT_OBJECT_0;
+    if (index == 0) m_resFunc(m_gameWidth, m_gameHeight, m_bytePerPixel);
+    else if (index == 1)
+    {
+        auto frame = m_frames.PopFront();
+        m_frameFunc(frame);
+    } else
+    {
+        LOG_ERROR << "Invalid index:" << index << std::endl;
+        return false;
+    }
+    return true;
 }

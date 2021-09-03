@@ -4,8 +4,33 @@
 #include "cgf/CloudGammingFrameworkClient.hh"
 #include "common/BufferStream.hh"
 
+int w, h, bpp1;
+void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
+{
+    w = width;
+    h = height;
+    bpp1 = bpp;
+    std::cout << w << " " << h << " " << bpp1 << std::endl;
+}
+
+void frameFunc(const char* pFrameData)
+{
+    for (int i = 0; i< w * h * bpp1; i++)
+    {
+        if (pFrameData[i] != ('A' + i) % 26)
+        {
+            std::cerr << "Invalid data\n";
+        }
+    }
+    std::cout << "data\n";
+}
+
 int main(int argc, char** argv)
 {
+    if (!cgfClientInitialize(resFunc, frameFunc))
+    {
+        return -1;
+    }
     if (!cgfClientConnect(123, "127.0.0.1", 8989))
     {
         return -1;
@@ -39,6 +64,7 @@ int main(int argc, char** argv)
     while (!window.ShouldClose())
     {
         window.HandleEvent();
+        cgfClientPollEvent(10);
         window.SwapBuffer();
     }
 

@@ -2,17 +2,17 @@
 #include <iostream>
 #include <Windows.h>
 
-    char buffer[100*100*3];
+char buffer[100*100*3];
 void input(Action action, Key key)
+{
+    // std::cout << "Action: " << action << " Key: " << key << std::endl;
+
+    if (action == Action::PRESS && key == Key::KEY_SPACE)
     {
-        // std::cout << "Action: " << action << " Key: " << key << std::endl;
-        
-        if (action == Action::PRESS && key == Key::KEY_SPACE)
-        {
-            std::cout << "Send frame\n";
-            cgfSetFrame(buffer);
-        }
+        std::cout << "Send frame\n";
+        cgfSetFrame(buffer);
     }
+}
 
 int main()
 {
@@ -35,12 +35,11 @@ int main()
     int i = 0;
     int fps = 60;
     float perFrame = 1000.0f/60.0f;
-    while(!cgfShouldExit() && i < 60)
+    while(!cgfShouldExit())
     {
         cgfPollEvent();
         cgfSetFrame(buffer);
         Sleep(perFrame);
-        i++;
     }
     cgfFinalize();
     return 0;
