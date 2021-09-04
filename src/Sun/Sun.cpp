@@ -23,12 +23,12 @@ std::string GetDir(const std::string& filePath)
 
 Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pConfig(config), m_gameDb(gamedb)
 {
-    if (!m_launchGame.Create(LAUNCH_EVENT) || !m_launchData.Create(LAUNCH_EVENT_MEMORY, sizeof(GameRegister)))
+    if (!m_launchGame.Create(LAUNCH_EVENT) || !m_pollProcessEvent.Create(POLL_PROCESS_EVENT) 
+            || !m_launchData.Create(LAUNCH_EVENT_MEMORY, sizeof(GameRegister)))
     {
         throw std::exception("Create failed");
     }
     WsaSocket::Init();
-
     unsigned short port = config->GetValue(PORT, 8901);
     if (!m_socket.Open(port))
     {
@@ -43,6 +43,8 @@ Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pCo
         m_gameInstances[i].Id = INVALID_GAMEID;
     }
 
+    m_pollProcess.Add(m_pollProcessEvent.GetHandle(), std::bind(&Sun::OnEventPollProcess, this, std::placeholders::_1));
+    m_monitorProcess = std::thread(&Sun::MonitorProcess, this);
     LOG_DEBUG << "Init done\n";
 }
 
@@ -57,7 +59,7 @@ Sun::~Sun()
     }
 }
 
-StreamPort Sun::LaunchGame(GameId id)
+StreamPort Sun::LaunchGame(ClientId clientId, GameId id)
 {
     /**
      * 1. Get game information from id
@@ -101,19 +103,24 @@ StreamPort Sun::LaunchGame(GameId id)
         LastError();
         return INVALID_PORT;
     }
-    if (WaitForInputIdle(processInformation.hProcess, 500) != 0)
-    {
-        LOG_ERROR << "Waiting for process idle failed\n";
-    }
+    LOG_DEBUG << "Waiting for process idle: " << WaitForInputIdle(processInformation.hProcess, 500) << std::endl;
 
     if (!m_launchGame.Wait(gameParam->RegisterTimeOut))
     {
         LOG_ERROR << "Waiting for register timeout\n";
         return INVALID_PORT;
     }
+
     GameRegister info;
     info.port = port;
-    if (!m_launchData.Write(&info, sizeof(GameRegister)))
+    info.DisconnectTimeout = gameParam->ClientDisconnectTimeOut;
+    info.Id = gameParam->Id;
+    info.clientId = clientId;
+    info.Status = GameStatus::STARTING;
+    GameInstance& instance = m_gameInstances[port];
+    instance.Id = gameParam->Id;
+    instance.ProcessHandle = processInformation.hProcess;
+    if (!m_launchData.Write(&info, sizeof(GameRegister)) || !instance.info.Create(CreateGameInfoString(clientId, id), sizeof(GameRegister)))
     {
         LOG_ERROR << "Failed to send register information\n";
         if (!TerminateProcess(processInformation.hProcess, -1))
@@ -124,12 +131,10 @@ StreamPort Sun::LaunchGame(GameId id)
         return INVALID_PORT;
     }
 
+    instance.info.Write(&info, sizeof(GameRegister));
     m_launchGame.Signal();
-    GameInstance instance;
-    instance.Id = gameParam->Id;
-    instance.ProcessHandle = processInformation.hProcess;
-    instance.status = GameStatus::STARTING;
-    m_gameInstances[port] = instance;
+    m_pollProcess.Add(processInformation.hProcess, std::bind(&Sun::OnProcessClose, this, std::placeholders::_1));
+    m_pollProcessEvent.Signal();
     LOG_INFO << "Success launch game " << id << std::endl;
     // TODO: Tracking status of process
     return port;
@@ -173,11 +178,10 @@ void Sun::OnClose(WsaSocketInformation* sock)
     {
         if (iter->first.GetHandle() == sock->socket->GetHandle())
         {
-            StreamPort port = FindExistRunningGame(iter->second);
-            if (port == INVALID_PORT)
-                m_clients.erase(iter);
-            else
-                
+            // StreamPort port = FindExistRunningGame(iter->second);
+            // if (port == INVALID_PORT)
+            // else
+            m_clients.erase(iter);
             break;
         }
     }
@@ -220,7 +224,7 @@ void Sun::LaunchGame(const WsaSocket* client, GameId id)
     StreamPort port = FindExistRunningGame(clientId);
     if (port == INVALID_PORT)
     {
-        port = LaunchGame(id);
+        port = LaunchGame(clientId, id);
     } else if (m_gameInstances[port].Id != id)
     {
         LOG_ERROR << "Client request game: " << id << " but current running game: " << m_gameInstances[port].Id << std::endl;
@@ -263,7 +267,7 @@ StreamPort Sun::FindExistRunningGame(ClientId clientId)
 {
     for(auto& el : m_gameInstances)
     {
-        if (el.second.clientId == clientId)
+        if (el.second.clientId == clientId && el.second.Id != INVALID_GAMEID)
         {
             return el.first;
         }
@@ -272,3 +276,42 @@ StreamPort Sun::FindExistRunningGame(ClientId clientId)
     return INVALID_PORT;
 }
 
+void Sun::MonitorProcess()
+{
+    m_pollProcess.Poll(INFINITE);
+}
+
+PollHandle::Action Sun::OnProcessClose(HANDLE handle)
+{
+    GameInstance* instance;
+    for(auto& el : m_gameInstances)
+    {
+        if (el.second.ProcessHandle == handle)
+        {
+            instance = &el.second;
+            break;
+        }
+    }
+
+    DWORD exitCode = 0;
+    if (GetExitCodeProcess(handle, &exitCode) == 0)
+    {
+        LastError();
+    }
+    LOG_DEBUG << "Process close with code: " << exitCode << std::endl;
+    instance->Id = INVALID_GAMEID;
+    GameRegister info;
+    instance->info.Read(&info);
+    instance->info.Release();
+    if (info.Status != GameStatus::SHUTDOWN)
+    {
+        LOG_ERROR << "Process unexpect close\n";
+    }
+
+    return PollHandle::Action::REMOVE;
+}
+
+PollHandle::Action Sun::OnEventPollProcess(HANDLE handle)
+{
+    return PollHandle::Action::NONE;
+}

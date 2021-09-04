@@ -193,3 +193,13 @@ bool Satellite::PollEvent(std::size_t timeout)
     }
     return true;
 }
+
+bool Satellite::CloseGame()
+{
+    BufferStream1KB stream;
+    MessageHeader header;
+    header.code = Message::MSG_STOP_GAME;
+    stream << header;
+    m_gameSocket.SendAll(stream.Get(), stream.Length());
+    return true;
+}

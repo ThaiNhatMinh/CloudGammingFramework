@@ -5,7 +5,8 @@ enum GameStatus
     STARTING,
     READY,
     STREAMING,
-    SHUTTING_DOWN
+    SHUTTING_DOWN,
+    SHUTDOWN
 };
 
 enum Key

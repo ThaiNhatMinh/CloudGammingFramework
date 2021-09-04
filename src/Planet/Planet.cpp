@@ -11,16 +11,12 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
     m_gameName = game;
     m_graphicApi = type;
     m_inputHandler = handler;
-    std::stringstream ss;
-    ss << this;
-    if (!m_launchGame.Open(LAUNCH_EVENT) || !m_finalize.Create("Local/GameFinalize" + ss.str()) || !m_launchData.Open(LAUNCH_EVENT_MEMORY, sizeof(Sun::GameRegister)))
+    if (!QueryInformation())
     {
-        LOG_ERROR << "Init IPC failed" << std::endl;
         return false;
     }
-    QueryPort();
     WsaSocket::Init();
-    if (!m_socket.Open(m_port))
+    if (!m_socket.Open(m_pInfo->port))
     {
         LOG_ERROR << "Open port failed\n";
         return false;
@@ -28,7 +24,6 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
     AddEvent(m_finalize, static_cast<EventCallback>(&Planet::OnFinalize));
     AddSocket(m_socket);
     m_pollEvent = std::thread(&Planet::InternalThread, this);
-    m_pollEvent.detach();
     InitKeyStatus();
     return true; 
 }
@@ -65,44 +60,67 @@ void Planet::InternalThread()
      * - Waiting for input and put to queue
      */
     WsaSocketPollEvent::PollEvent();
-    // Signal poll stopped;
-    m_finalize.Signal();
 }
 
-void Planet::QueryPort()
+bool Planet::QueryInformation()
 {
+    if (!m_launchGame.Open(LAUNCH_EVENT) || !m_launchData.Open(LAUNCH_EVENT_MEMORY, sizeof(Sun::GameRegister)))
+    {
+        LOG_ERROR << "Init IPC failed" << std::endl;
+        return false;
+    }
     m_launchGame.Signal();
     if (!m_launchGame.Wait(1000))
     {
-        throw std::exception("Wait respone from sun failed");
+        LOG_ERROR << "Wait respone from sun failed";
+        return false;
     }
-    Sun::GameRegister info = {};
-    if (!m_launchData.Read(&info))
+    m_pInfo = m_launchData.Get<Sun::GameRegister>();
+    ClientId client = m_pInfo->clientId;
+    GameId id = m_pInfo->Id;
+    LOG_DEBUG << "Game infor: port=" << m_pInfo->port << " clientid=" << m_pInfo->clientId << std::endl;
+    if (!m_disconnectTimer.Create(CreateDisconnectString(m_pInfo->clientId, m_pInfo->Id)))
     {
-        throw std::exception("Get port failed");
+        return false;
     }
-    m_port = info.port;
-    LOG_DEBUG << "Port from sun: " << m_port << std::endl;
+
+    if (!m_finalize.Create(CreateShutdownString(m_pInfo->clientId, m_pInfo->Id)))
+    {
+        return false;
+    }
+    m_launchData.Release();
+    if (!m_launchData.Open(CreateGameInfoString(client, id), sizeof(Sun::GameRegister)))
+    {
+        return false;
+    }
+    m_pInfo = m_launchData.Get<Sun::GameRegister>();
+    m_launchGame.Signal();
+
+    return true;
 }
 
 void Planet::OnRecv(WsaSocketInformation *sock)
 {
+    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
+    sock->recvBuffer.SetCurrentPosition(0);
+    
+    MessageHeader header;
+    sock->recvBuffer >> header;
     constexpr std::size_t size = sizeof(InputEvent);
-    while (sock->recvBuffer.Length() >= MSG_INPUT_PACKAGE_SIZE)
+    if (header.code == Message::MSG_INPUT && sock->recvBuffer.Length() >= size)
     {
-        sock->recvBuffer.SetCurrentPosition(0);
-        MessageHeader header;
-        sock->recvBuffer >> header;
-        if (header.code == Message::MSG_INPUT)
-        {
-            InputEvent event;
-            sock->recvBuffer >> event;
-            m_inputEvents.push(event);
-        } else
-        {
-            LOG_ERROR << "Unknow message code: " << header.code << std::endl;
-        }
+        InputEvent event;
+        sock->recvBuffer >> event;
+        m_inputEvents.push(event);
+    } else if (header.code == Message::MSG_STOP_GAME)
+    {
+        m_pInfo->Status = GameStatus::SHUTTING_DOWN;
+    } else
+    {
+        LOG_ERROR << "Unknow message code: " << header.code << std::endl;
+        throw std::exception("Unknow message code");
     }
+    sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
 }
 
 void Planet::OnAccept(WsaSocket &&newConnect)
@@ -114,7 +132,9 @@ void Planet::OnAccept(WsaSocket &&newConnect)
     }
     m_client = std::move(newConnect);
     AddSocket(m_client, static_cast<SocketCallback>(&Planet::OnRecv));
-    
+
+    m_pInfo->Status = GameStatus::STREAMING;
+
     if (m_Width != 0)
     {
         BufferStream1KB stream;
@@ -133,14 +153,9 @@ void Planet::OnAccept(WsaSocket &&newConnect)
 
 void Planet::OnClose(WsaSocketInformation* sock)
 {
-    if (sock->socket->GetHandle() != m_client.GetHandle())
-    {
-        LOG_ERROR << "Close on unknow socket\n";
-        return;
-    }
-
     m_client.Release();
     LOG_DEBUG << "Client disconnected\n";
+
     // TODO: Check timeout to stop game
 }
 
@@ -151,12 +166,10 @@ int Planet::GetKeyStatus(Key key)
 
 void Planet::Finalize()
 {
+    TRACE;
+    m_pInfo->Status = GameStatus::SHUTDOWN;
     m_finalize.Signal();
-    if (!m_finalize.Wait(500))
-    {
-        LOG_WARN << "Failed to waiting for thread stop\n";
-        return;
-    }
+    m_pollEvent.join();
     LOG_DEBUG << "Finalize planet\n";
 }
 
@@ -186,7 +199,11 @@ void Planet::SendFrame()
 }
 
 bool Planet::ShouldExit()
-{    
+{
+    if (m_pInfo->Status == GameStatus::SHUTTING_DOWN)
+    {
+        return true;
+    }
     /**
      * TODO: Check if client disconnect timeout, or if client request close
      */

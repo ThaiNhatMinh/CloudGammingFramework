@@ -35,3 +35,8 @@ void cgfClientFinalize()
 {
     meowww.Finalize();
 }
+
+bool cfgClientCloseGame()
+{
+    return meowww.CloseGame();
+}

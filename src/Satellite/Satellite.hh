@@ -18,7 +18,8 @@ public:
         INITED,
         CONNECTED,
         REQUESTED_GAME,
-        RECEIVING_STREAM
+        RECEIVING_STREAM,
+        CLOSING_GAME
     };
 
 private:
@@ -55,6 +56,7 @@ public:
     bool SendInput(InputEvent event);
     void Finalize();
     bool PollEvent(std::size_t timeout);
+    bool CloseGame();
 
 private:
     void OnRecvServer(WsaSocketInformation* sock);

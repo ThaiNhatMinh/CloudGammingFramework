@@ -7,6 +7,7 @@
 #include "cgf/CloudGammingFramework.hh"
 #include "ipc/Event.hh"
 #include "ipc/FileMapping.hh"
+#include "ipc/WaitableTimer.hh"
 #include "ipc/WsaSocket.hh"
 #include "Sun/Sun.hh"
 
@@ -24,7 +25,6 @@ private:
     Event m_launchGame;
     Event m_finalize;
     FileMapping m_launchData;
-    StreamPort m_port;
     WsaSocket m_socket;
     WsaSocket m_client;
     char m_KeyStatus[512];
@@ -32,6 +32,8 @@ private:
     std::size_t m_Height;
     unsigned char m_BytePerPixel = 3;
     std::unique_ptr<char> m_pFramePackage; 
+    WaitableTimer m_disconnectTimer;
+    Sun::GameRegister* m_pInfo;
 
 public:
     Planet() {};
@@ -67,7 +69,7 @@ private:
      */
     void InternalThread();
 
-    void QueryPort();
+    bool QueryInformation();
     void OnRecv(WsaSocketInformation* sock);
     void OnAccept(WsaSocket&& newConnect) override;
     void OnClose(WsaSocketInformation* sock) override;

@@ -7,6 +7,7 @@ typedef void (*cgfFramefun)(const char* pFrameData);
 bool cgfClientInitialize(cgfResolutionfun resFunc, cgfFramefun frameFunc);
 bool cgfClientConnect(ClientId id, const char* ip, unsigned short port);
 bool cfgClientRequestGame(GameId id);
+bool cfgClientCloseGame();
 bool cgfClientSendEvent(InputEvent event);
 bool cgfClientPollEvent(int timeOut);
 void cgfClientFinalize();
