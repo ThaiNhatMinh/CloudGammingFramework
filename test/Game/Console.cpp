@@ -37,15 +37,11 @@ int main()
     cgfSetResolution(w, h);
     int i = 0;
     int fps = 60;
-    float perFrame = 1000.0f/60.0f;
+    DWORD perFrame = 1000/60;
     while(!cgfShouldExit())
     {
         cgfPollEvent();
-        if ( i++ < 2000)
-        {
-            std::cout << "Frame: " << i << std::endl;
-            cgfSetFrame(buffer);
-        }
+        cgfSetFrame(buffer);
         Sleep(perFrame);
     }
     cgfFinalize();

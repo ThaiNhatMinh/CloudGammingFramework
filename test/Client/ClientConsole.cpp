@@ -76,7 +76,7 @@ int main(int argc, char** argv)
         cgfClientPollEvent(10);
         window.SwapBuffer();
     }
-
+    cfgClientCloseGame();
     cgfClientFinalize();
     return 0;
 }
