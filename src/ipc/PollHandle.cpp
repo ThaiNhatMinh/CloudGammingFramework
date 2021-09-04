@@ -14,7 +14,9 @@ void PollHandle::Poll(std::size_t timeout)
         DWORD index = WaitForMultipleObjects(m_size, m_handles, false, timeout);
         if (index == WAIT_FAILED || index == WAIT_TIMEOUT) continue;
         index -= WAIT_OBJECT_0;
-        if (!m_callbacks[index](m_handles[index])) break;
+        Action action = m_callbacks[index](m_handles[index]);
+        if (action == Action::STOP_POLL) break;
+        else if (action == Action::REMOVE) Remove(m_handles[index]);
     }
 }
 
@@ -34,6 +36,7 @@ bool PollHandle::Add(HANDLE handle, EventCallback callback)
     m_handles[m_size] = handle;
     m_callbacks[m_size] = callback;
     m_size++;
+    return true;
 }
 
 void PollHandle::Remove(HANDLE handle)

@@ -6,7 +6,13 @@
 class PollHandle
 {
 public:
-    typedef std::function<bool(HANDLE)> EventCallback;
+    enum Action
+    {
+        NONE,
+        STOP_POLL,
+        REMOVE
+    };
+    typedef std::function<Action(HANDLE)> EventCallback;
 
 private:
     EventCallback m_callbacks[MAXIMUM_WAIT_OBJECTS];
