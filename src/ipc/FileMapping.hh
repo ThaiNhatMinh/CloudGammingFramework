@@ -83,4 +83,11 @@ public:
         std::memcpy(dst, buffer.c_str(), structSize);
         return true;
     }
+
+    template<class T>
+    inline T* Get()
+    {
+        void* address = const_cast<void*>(m_address.get());
+        return static_cast<T*>(address);
+    }
 };

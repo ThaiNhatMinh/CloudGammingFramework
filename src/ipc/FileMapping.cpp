@@ -75,6 +75,7 @@ void FileMapping::Release()
     m_address.Release();
     m_mappingHandle.Release();
     m_numByte = 0;
+    m_isOpenCreate = false;
 }
 
 bool FileMapping::Write(const void* buffer, std::size_t length)
