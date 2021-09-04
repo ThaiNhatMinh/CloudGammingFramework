@@ -14,27 +14,34 @@ int main()
         return 0;
     }
 
-    BufferStream1KB stream;
-    InputEvent event;
-    event.key.key = Key::KEY_A;
-    event.key.action = Action::PRESSING;
-    stream << event;
-    static char buffer[64];
-    CreateInputMsg(buffer, 64, event);
-    while (true)
+    std::unique_ptr<char[]> buffer;
+    int w = 1920, h=1080, bpp = 3;
+    buffer.reset(new char[w*h*bpp + MSG_HEADER_LENGTH]);
+    MessageHeader header;
+    header.code = Message::MSG_FRAME;
+    std::memcpy(buffer.get(), &header, MSG_HEADER_LENGTH);
+    for (int i = 0; i< w * h * bpp; i++)
     {
-        std::string msg;
-        std::cin >> msg;
+        buffer[i + MSG_HEADER_LENGTH] = 'A' + i % 26;
+    }
+    buffer[MSG_HEADER_LENGTH + 0] = 1;
+    buffer[MSG_HEADER_LENGTH + 1] = 1;
+    buffer[MSG_HEADER_LENGTH + 2] = 1;
+    buffer[ w*h*bpp - 1] = 1;
+    buffer[ w*h*bpp - 2] = 1;
+    buffer[ w*h*bpp - 3] = 1;
+    int i = 0;
+    while (i++ < 200000)
+    {
         std::size_t numSend = 0;
-        while (numSend < MSG_INPUT_PACKAGE_SIZE)
+        while (numSend < w*h*bpp + MSG_HEADER_LENGTH)
         {
-            numSend += sock.SendAll(buffer, MSG_INPUT_PACKAGE_SIZE);
+            numSend += sock.SendAll(buffer.get(), w*h*bpp + MSG_HEADER_LENGTH);
+            if (numSend == 0) return 0;
+            std::cout << "Error " << i << " " << numSend <<std::endl;
         }
-        if (msg == "EXIT") break;
-        std::cout << "SendALL" << std::endl;
 
-        sock.Recv(msg);
-        std::cout << "Server respose:" << msg << std::endl;
+        Sleep(1000/60.0f);
     }
     
     return 0;

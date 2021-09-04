@@ -43,6 +43,15 @@ public:
         return *this;
     }
 
+    template<>
+    inline BufferStream& operator>>(std::string& in)
+    {
+        if (m_length == m_currentPosition) return *this;
+        in.resize(m_length - m_currentPosition);
+        Extract(const_cast<char*>(in.data()), m_length - m_currentPosition);
+        return *this;
+    }
+
     const char* operator[](std::size_t index) const
     {
         return &m_pBuffer[index];
@@ -83,6 +92,11 @@ public:
         std::memcpy(pBuffer, &m_pBuffer[m_currentPosition], extractLength);
         std::memmove(&m_pBuffer[m_currentPosition], &m_pBuffer[m_currentPosition] + extractLength, m_length - m_currentPosition - extractLength);
         m_length -= extractLength;
+    }
+
+    constexpr std::size_t Capacity()
+    {
+        return length;
     }
 };
 

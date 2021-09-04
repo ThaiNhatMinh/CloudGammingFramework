@@ -2,24 +2,27 @@
 #include <iostream>
 #include <Windows.h>
 
-char buffer[100*100*3];
+const int w = 1920;
+const int h = 1080;
+const int bpp = 3;
+char buffer[w*h*bpp];
 void input(Action action, Key key)
 {
-    // std::cout << "Action: " << action << " Key: " << key << std::endl;
-
-    if (action == Action::PRESS && key == Key::KEY_SPACE)
-    {
-        std::cout << "Send frame\n";
-        cgfSetFrame(buffer);
-    }
+    std::cout << "Action: " << action << " Key: " << key << std::endl;
 }
 
 int main()
 {
-    for (int i = 0; i< 100*100*3; i++)
+    for (int i = 0; i< w*h*bpp; i++)
     {
-        buffer[i] = ('A' + i) % 26;
+        buffer[i] = 'A' + i % 26;
     }
+    buffer[0] = 1;
+    buffer[1] = 1;
+    buffer[2] = 1;
+    buffer[ w*h*bpp - 1] = 1;
+    buffer[ w*h*bpp - 2] = 1;
+    buffer[ w*h*bpp - 3] = 1;
 
     InputCallback callback;
     callback.CursorPositionCallback = [](double xpos, double ypos) {};
@@ -31,14 +34,18 @@ int main()
         std::cout << "Register failed\n";
         return -1;
     }
-    cgfSetResolution(100, 100);
+    cgfSetResolution(w, h);
     int i = 0;
     int fps = 60;
     float perFrame = 1000.0f/60.0f;
     while(!cgfShouldExit())
     {
         cgfPollEvent();
-        cgfSetFrame(buffer);
+        if ( i++ < 2000)
+        {
+            std::cout << "Frame: " << i << std::endl;
+            cgfSetFrame(buffer);
+        }
         Sleep(perFrame);
     }
     cgfFinalize();

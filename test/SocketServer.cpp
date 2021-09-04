@@ -3,12 +3,24 @@
 #include "ipc/Event.hh"
 #include "cgf/cgf.hh"
 #include <iostream>
+#include "Satellite/Frames.hh"
+struct Frame
+    {
+        std::unique_ptr<char[]> data;
+        std::size_t length;
+    };
 
+const std::size_t size = 1920*1080*3;
 class Server : public WsaSocketPollEvent
 {
     Event event;
     WsaSocket client;
     WsaSocket sock;
+    std::string buffer;
+    bool m_bIsReceivingFrame = false;
+    Frame m_currentFrame;
+    Frames m_frames;
+
 public:
     Server()
     {
@@ -18,6 +30,9 @@ public:
         }
         AddEvent(event, static_cast<EventCallback>(&Server::OnExit));
         AddSocket(sock);
+        m_currentFrame.data.reset(new char[size]);
+        m_currentFrame.length = 0;
+        m_frames.Init(20, size);
     }
 
     void OnAccept(WsaSocket&& newSocket) override
@@ -33,24 +48,40 @@ public:
 
     void OnRecv(WsaSocketInformation* sock)
     {
-        std::string msg(sock->recvBuffer.Get(), sock->recvBuffer.Length());
-        if (msg == "EXIT")
-            event.Signal();
-        // std::cout << "Recv: " << msg << std::endl;
-        constexpr std::size_t size = sizeof(InputEvent);
-        while (sock->recvBuffer.Length() >= MSG_INPUT_PACKAGE_SIZE)
+        if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
+        sock->recvBuffer.SetCurrentPosition(0);
+        if (m_bIsReceivingFrame)
         {
-            MessageHeader header;
-            sock->recvBuffer >> header;
-            if (header.code == Message::MSG_INPUT)
+            std::size_t byteRemain = size - m_currentFrame.length;
+            std::size_t byteToCopy = sock->recvBuffer.Length();
+            if (byteToCopy > byteRemain) byteToCopy = byteRemain;
+            sock->recvBuffer.Extract(m_currentFrame.data.get() + m_currentFrame.length, byteToCopy);
+            LOG_DEBUG << sock->recvBuffer.GetCurrentPosition() << ":" << sock->recvBuffer.Length() << std::endl;
+            m_currentFrame.length += byteToCopy;
+            if (m_currentFrame.length == size)
             {
-                InputEvent event;
-                sock->recvBuffer >> event;
-            } else
-            {
-                LOG_ERROR << "Unknow message code: " << header.code << std::endl;
+                static int num = 0;
+                num++;
+                LOG_DEBUG << "Num " << num << std::endl;
+                m_frames.PushBack(m_currentFrame.data.get());
+                m_currentFrame.length = 0;
+                m_bIsReceivingFrame = false;
             }
+            sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
+            return;
         }
+
+        MessageHeader header;
+        sock->recvBuffer >> header;
+        if (header.code == Message::MSG_FRAME)
+        {
+            m_bIsReceivingFrame = true;
+        } else
+        {
+            LOG_DEBUG << "Unknow code " << header.code << std::endl;
+            exit(-1);
+        }
+        sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
     }
 
     void OnSend(WsaSocketInformation* sock)

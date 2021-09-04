@@ -8,8 +8,6 @@ void LastError();
 void LastSocketError();
 void LastErrorWithCode(DWORD error);
 
-#define LASTSOCKETERROR {LOG_ERROR << __LINE__ << ": "; LastSocketError();}
-
 template<class T>
 T GetProcAddress(HMODULE module, const char* funcName)
 {

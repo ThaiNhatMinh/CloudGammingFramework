@@ -5,24 +5,33 @@
 #include "common/BufferStream.hh"
 
 int w, h, bpp1;
+std::unique_ptr<char[]> buffer;
 void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
 {
     w = width;
     h = height;
     bpp1 = bpp;
     std::cout << w << " " << h << " " << bpp1 << std::endl;
+    buffer.reset(new char[w*h*bpp]);
+    
+    for (int i = 0; i< w * h * bpp1; i++)
+    {
+        buffer[i] = 'A' + i % 26;
+    }
+    buffer[0] = 1;
+    buffer[1] = 1;
+    buffer[2] = 1;
+    buffer[ w*h*bpp - 1] = 1;
+    buffer[ w*h*bpp - 2] = 1;
+    buffer[ w*h*bpp - 3] = 1;
 }
 
 void frameFunc(const char* pFrameData)
 {
-    for (int i = 0; i< w * h * bpp1; i++)
+    if (std::memcmp(pFrameData, buffer.get(), w * h * bpp1) != 0)
     {
-        if (pFrameData[i] != ('A' + i) % 26)
-        {
-            std::cerr << "Invalid data\n";
-        }
+        std::cerr << "Data corrupt\n";
     }
-    std::cout << "data\n";
 }
 
 int main(int argc, char** argv)

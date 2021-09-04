@@ -1,4 +1,7 @@
+#include <chrono>
 #include <sstream>
+#include <thread>
+
 #include "WsaSocket.hh"
 #include "common/Module.hh"
 #include "common/Logger.hh"
@@ -8,7 +11,7 @@ WsaSocket::WsaSocket(SOCKET handle): m_handle(handle)
     AutoCloseEvent event = WSACreateEvent();
     if (WSAEventSelect(handle, event.get(), FD_READ | FD_WRITE | FD_CLOSE) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return;
     }
     m_event = std::move(event);
@@ -38,7 +41,7 @@ bool WsaSocket::Open(unsigned short port)
     AutoCloseSocket Listen = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (Listen == INVALID_SOCKET)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
     SOCKADDR_IN InternetAddr;
@@ -48,19 +51,19 @@ bool WsaSocket::Open(unsigned short port)
 
     if (bind(Listen.get(), (PSOCKADDR)&InternetAddr, sizeof(InternetAddr)) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
 
     AutoCloseEvent event = WSACreateEvent();
     if (WSAEventSelect(Listen.get(), event.get(), FD_ACCEPT | FD_CLOSE) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
     if (listen(Listen.get(), SOMAXCONN) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
 
@@ -76,27 +79,27 @@ bool WsaSocket::Connect(std::string ip, USHORT port)
     AutoCloseSocket handle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (handle == INVALID_SOCKET)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
     struct sockaddr_in remote;
     remote.sin_family = AF_INET;
     if (inet_pton(AF_INET, ip.c_str(), &(remote.sin_addr)) == -1)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
 
     remote.sin_port = htons(port);
     if (connect(handle.get(), (struct sockaddr *)&remote, sizeof(struct sockaddr)) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
     AutoCloseEvent event = WSACreateEvent();
     if (WSAEventSelect(handle.get(), event.get(), FD_READ | FD_WRITE | FD_CLOSE) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
 
@@ -119,7 +122,7 @@ bool WsaSocket::ConnectToHost(std::string host, USHORT port)
 
     if (getaddrinfo(host.c_str(), ss.str().c_str(), &hints, &servinfo) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
 
@@ -138,7 +141,7 @@ bool WsaSocket::ConnectToHost(std::string host, USHORT port)
     AutoCloseEvent event = WSACreateEvent();
     if (WSAEventSelect(handle, event.get(), FD_READ | FD_WRITE | FD_CLOSE) != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return false;
     }
 
@@ -162,10 +165,17 @@ std::size_t WsaSocket::SendAll(const void* buffer, int length) const
         int nsend = send(m_handle.get(), pBuffer + sent, bufferLength - sent, 0);
         if (nsend == SOCKET_ERROR)
         {
-            LASTSOCKETERROR
-            return sent;
-        }
-        sent += nsend;
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+            {
+                using namespace std::chrono_literals;
+                std::this_thread::sleep_for(1ms);
+                TRACE;
+            }else
+            {
+                LastSocketError();
+                return sent;
+            }
+        } else sent += nsend;
     }
     return sent;
 }
@@ -181,7 +191,7 @@ int WsaSocket::Recv(std::string& buffer) const
         return rc;
     } else
     {
-        LASTSOCKETERROR
+        LastSocketError();
         return SOCKET_ERROR;
     }
 }
@@ -195,7 +205,7 @@ void WsaSocket::Init()
     iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0)
     {
-        LASTSOCKETERROR
+        LastSocketError();
     }
 }
 
@@ -253,9 +263,13 @@ void WsaSocketPollEvent::PollEvent()
             int numRecv = m_sockets[IndexSocket].socket->Recv(buffer);
             if (numRecv != SOCKET_ERROR)
             {
-                m_sockets[IndexSocket].recvBuffer << buffer;
-                if (m_sockets[IndexSocket].recvCallback)
+                while (m_sockets[IndexSocket].recvBuffer.Length() + buffer.length() > m_sockets[IndexSocket].recvBuffer.Capacity())
+                {
+                    LOG_DEBUG << "Full capacity: " << buffer.length() << " " << m_sockets[IndexSocket].recvBuffer.Length() << std::endl;
                     (this->*m_sockets[IndexSocket].recvCallback)(&m_sockets[IndexSocket]);
+                }
+                m_sockets[IndexSocket].recvBuffer << buffer;
+                (this->*m_sockets[IndexSocket].recvCallback)(&m_sockets[IndexSocket]);
             }
         }
 

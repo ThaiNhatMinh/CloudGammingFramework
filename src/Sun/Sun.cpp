@@ -173,7 +173,11 @@ void Sun::OnClose(WsaSocketInformation* sock)
     {
         if (iter->first.GetHandle() == sock->socket->GetHandle())
         {
-            m_clients.erase(iter);
+            StreamPort port = FindExistRunningGame(iter->second);
+            if (port == INVALID_PORT)
+                m_clients.erase(iter);
+            else
+                
             break;
         }
     }

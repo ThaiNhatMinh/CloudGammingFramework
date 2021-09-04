@@ -170,6 +170,7 @@ void Planet::SetResolution(std::size_t w, std::size_t h)
 
 void Planet::SetFrame(const void* pData)
 {
+    if (m_client.GetHandle() == INVALID_SOCKET) return;
     std::size_t size = m_Width * m_Height * m_BytePerPixel;
     CreateFrameMsg(m_pFramePackage.get(), size + MSG_HEADER_LENGTH, pData, size);
     SendFrame();
@@ -177,7 +178,6 @@ void Planet::SetFrame(const void* pData)
 
 void Planet::SendFrame()
 {
-    if (m_client.GetHandle() == INVALID_SOCKET) return;
     std::size_t size = m_Width * m_Height * m_BytePerPixel + MSG_HEADER_LENGTH;
     if (m_client.SendAll(m_pFramePackage.get(), size) < size)
     {

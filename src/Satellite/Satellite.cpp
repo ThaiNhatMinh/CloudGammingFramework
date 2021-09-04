@@ -126,6 +126,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
             m_bIsReceivingFrame = false;
             m_events[1].Signal();
         }
+        sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
         return;
     }
 
@@ -139,9 +140,9 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
         m_gameWidth = w;
         m_gameHeight = h;
         m_bytePerPixel = bpp;
-        LOG_DEBUG << "Message::MSG_RESOLUTION: " << w << " " << h << " " << bpp << std::endl;
         m_frames.Init(20, m_gameWidth * m_gameHeight * m_bytePerPixel);
         m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
+        m_currentFrame.length = 0;
         m_events[0].Signal();
     } else if (header.code == Message::MSG_FRAME)
     {
@@ -149,6 +150,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
     } else
     {
         LOG_DEBUG << "Unknow code " << header.code << std::endl;
+        throw std::exception("Invalid message code");
     }
     sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
 }

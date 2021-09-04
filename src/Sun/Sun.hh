@@ -45,4 +45,5 @@ private:
     StreamPort FindFreePort();
     StreamPort FindExistRunningGame(ClientId id);
     ClientId FindClient(const WsaSocket* client);
+    void StartWaitingForClient();
 };
