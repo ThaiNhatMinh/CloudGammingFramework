@@ -13,7 +13,10 @@ int main()
     GameParameter console;
     console.Id = 1;
     console.ExecuteLocation = "D:\\Study\\CloudGaming\\CloudGamming\\build\\test\\Game\\Debug\\Console.exe";
-    games.push_back(console);
+    GameParameter imgui;
+    imgui.Id = 2;
+    imgui.ExecuteLocation = "D:\\Study\\CloudGaming\\CloudGamming\\build\\test\\Game\\Debug\\ImGuiOpenGL.exe";
+    games.push_back(imgui);
     Sun sun(&config, games);
     
     sun.PollEvent();

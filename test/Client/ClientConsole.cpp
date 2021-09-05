@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     while (!window.ShouldClose())
     {
         window.HandleEvent();
-        cgfClientPollEvent(10);
+        cgfClientPollEvent(5);
         window.SwapBuffer();
     }
     cfgClientCloseGame();
