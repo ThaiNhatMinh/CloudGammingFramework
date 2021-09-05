@@ -95,7 +95,7 @@ bool Planet::QueryInformation()
     }
     m_pInfo = m_launchData.Get<Sun::GameRegister>();
     m_launchGame.Signal();
-
+    AddTimer(m_disconnectTimer, static_cast<TimerCallback>(&Planet::OnDisconnectTimeout));
     return true;
 }
 
@@ -156,6 +156,11 @@ void Planet::OnClose(WsaSocketInformation* sock)
     m_client.Release();
     LOG_DEBUG << "Client disconnected\n";
 
+    if (m_pInfo->Status != GameStatus::SHUTTING_DOWN || m_pInfo->Status != GameStatus::SHUTDOWN)
+    {
+        LOG_DEBUG << "Client disconnect while game running, start timer\n";
+        m_disconnectTimer.SetTime(m_pInfo->DisconnectTimeout);
+    }
     // TODO: Check timeout to stop game
 }
 
@@ -213,6 +218,12 @@ bool Planet::ShouldExit()
 bool Planet::OnFinalize(const Event* sock)
 {
     return false;
+}
+
+void Planet::OnDisconnectTimeout(const WaitableTimer* timer)
+{
+    LOG_WARN << "Client disconnect timeout, closing game\n";
+    m_pInfo->Status = GameStatus::SHUTTING_DOWN;
 }
 
 void Planet::InitKeyStatus()

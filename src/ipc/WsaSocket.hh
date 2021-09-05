@@ -6,6 +6,7 @@
 #include "common/BufferStream.hh"
 #include "common/NonCopyable.hh"
 #include "Event.hh"
+#include "WaitableTimer.hh"
 #include "Win32.hh"
 
 class WsaSocket: public NonCopyable
@@ -46,6 +47,7 @@ protected:
     struct WsaSocketInformation;
     typedef void (WsaSocketPollEvent::*SocketCallback)(WsaSocketInformation* info);
     typedef bool (WsaSocketPollEvent::*EventCallback)(const Event* info);
+    typedef void (WsaSocketPollEvent::*TimerCallback)(const WaitableTimer* timer);
     struct WsaSocketInformation
     {
         const WsaSocket* socket;
@@ -59,17 +61,25 @@ protected:
         const Event* event;
         EventCallback callback;
     };
+
+    struct TimerInformation
+    {
+        const WaitableTimer* timer;
+        TimerCallback callback;
+    };
     
 private:
     WSAEVENT EventArray[WSA_MAXIMUM_WAIT_EVENTS];
     std::vector<WsaSocketInformation> m_sockets;
     std::vector<EventInformation> m_events;
+    std::vector<TimerInformation> m_timers;
 
 public:
     virtual void OnAccept(WsaSocket&& newSocket) {};
     virtual void OnClose(WsaSocketInformation* sock) {};
     bool AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback = nullptr);
     bool AddEvent(const Event& event, EventCallback callback);
+    bool AddTimer(const WaitableTimer& timer, TimerCallback callback);
     void PollEvent();
     void UpdateArray();
 };

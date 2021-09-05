@@ -73,6 +73,7 @@ private:
     void OnRecv(WsaSocketInformation* sock);
     void OnAccept(WsaSocket&& newConnect) override;
     void OnClose(WsaSocketInformation* sock) override;
+    void OnDisconnectTimeout(const WaitableTimer* timer);
     bool OnFinalize(const Event* sock);
     void InitKeyStatus();
     void SendFrame();

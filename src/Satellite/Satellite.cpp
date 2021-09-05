@@ -2,6 +2,12 @@
 #include "common/BufferStream.hh"
 #include "common/Message.hh"
 
+Satellite::~Satellite()
+{
+    Finalize();
+    LOG_DEBUG << "End Satellite\n";
+}
+
 bool Satellite::Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc)
 {
     std::stringstream ss;

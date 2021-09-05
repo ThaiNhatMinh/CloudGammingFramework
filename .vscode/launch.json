@@ -46,6 +46,16 @@
             "cwd": "${fileDirname}",
             "environment": [],
             "console": "integratedTerminal"
+        }, {
+            "name": "(Windows) Launch Current File",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build\\test\\Debug\\${fileBasenameNoExtension}.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "integratedTerminal"
         },
     ],
     "compounds": [

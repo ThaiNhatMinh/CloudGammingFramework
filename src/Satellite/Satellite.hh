@@ -50,6 +50,7 @@ private:
 
 public:
     Satellite(): m_bIsReceivingFrame(false) { WsaSocket::Init(); }
+    ~Satellite();
     bool Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc);
     bool Connect(ClientId id, const std::string& ip, unsigned short port);
     bool RequestGame(GameId id);

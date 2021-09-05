@@ -223,7 +223,8 @@ void WsaSocketPollEvent::PollEvent()
     {
         // Wait for network events on all sockets
         std::size_t eventSize = m_events.size();
-        std::size_t eventTotal = m_sockets.size() + eventSize;
+        std::size_t timerSize = m_timers.size();
+        std::size_t eventTotal = m_sockets.size() + eventSize + timerSize;
         std::size_t Index = WSAWaitForMultipleEvents(eventTotal, EventArray, FALSE, WSA_INFINITE, FALSE);
         Index = Index - WSA_WAIT_EVENT_0;
         if (Index < eventSize)
@@ -231,9 +232,14 @@ void WsaSocketPollEvent::PollEvent()
             if (!(this->*m_events[Index].callback)(m_events[Index].event))
                 break;
             continue;
+        } else if (Index < timerSize + eventSize)
+        {
+            int IndexTimer = Index - eventSize;
+            (this->*m_timers[IndexTimer].callback)(m_timers[IndexTimer].timer);
+            continue;
         }
 
-        int IndexSocket = Index - eventSize;
+        int IndexSocket = Index - eventSize - timerSize;
         WSANETWORKEVENTS NetworkEvents;
         WSAEnumNetworkEvents(m_sockets[IndexSocket].socket->GetHandle(), EventArray[Index], &NetworkEvents);
         // Check for FD_ACCEPT messages
@@ -265,7 +271,7 @@ void WsaSocketPollEvent::PollEvent()
             {
                 while (m_sockets[IndexSocket].recvBuffer.Length() + buffer.length() > m_sockets[IndexSocket].recvBuffer.Capacity())
                 {
-                    LOG_DEBUG << "Full capacity: " << buffer.length() << " " << m_sockets[IndexSocket].recvBuffer.Length() << std::endl;
+                    // LOG_DEBUG << "Full capacity: " << buffer.length() << " " << m_sockets[IndexSocket].recvBuffer.Length() << std::endl;
                     (this->*m_sockets[IndexSocket].recvCallback)(&m_sockets[IndexSocket]);
                 }
                 m_sockets[IndexSocket].recvBuffer << buffer;
@@ -301,11 +307,15 @@ void WsaSocketPollEvent::PollEvent()
 
 void WsaSocketPollEvent::UpdateArray()
 {
-    std::size_t eventTotal = m_sockets.size() + m_events.size();
+    std::size_t eventTotal = m_sockets.size() + m_events.size() + m_timers.size();
     int index = 0;
     for (auto iter = m_events.begin(); iter != m_events.end(); iter++, index++)
     {
         EventArray[index] = iter->event->GetHandle();
+    }
+    for (auto iter = m_timers.begin(); iter != m_timers.end(); iter++, index++)
+    {
+        EventArray[index] = iter->timer->GetHandle();
     }
     for (auto iter = m_sockets.begin(); iter != m_sockets.end(); iter++, index++)
     {
@@ -315,7 +325,7 @@ void WsaSocketPollEvent::UpdateArray()
 
 bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback)
 {
-    if (m_sockets.size() + m_events.size() > WSA_MAXIMUM_WAIT_EVENTS)
+    if (m_sockets.size() + m_events.size() + m_timers.size() > WSA_MAXIMUM_WAIT_EVENTS)
     {
         LOG_ERROR << "Reach maximmum connections/event\n";
         return false;
@@ -330,7 +340,7 @@ bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback re
 
 bool WsaSocketPollEvent::AddEvent(const Event& event, EventCallback callback)
 {
-    if (m_sockets.size() + m_events.size() > WSA_MAXIMUM_WAIT_EVENTS)
+    if (m_sockets.size() + m_events.size() + m_timers.size() > WSA_MAXIMUM_WAIT_EVENTS)
     {
         LOG_ERROR << "Reach maximmum connections/event\n";
         return false;
@@ -340,6 +350,22 @@ bool WsaSocketPollEvent::AddEvent(const Event& event, EventCallback callback)
     info.event = &event;
     info.callback = callback;
     m_events.push_back(info);
+    UpdateArray();
+    return true;
+}
+
+bool WsaSocketPollEvent::AddTimer(const WaitableTimer& timer, TimerCallback callback)
+{
+    if (m_sockets.size() + m_events.size() + m_timers.size() > WSA_MAXIMUM_WAIT_EVENTS)
+    {
+        LOG_ERROR << "Reach maximmum connections/event\n";
+        return false;
+    }
+
+    TimerInformation info;
+    info.timer = &timer;
+    info.callback = callback;
+    m_timers.push_back(info);
     UpdateArray();
     return true;
 }
