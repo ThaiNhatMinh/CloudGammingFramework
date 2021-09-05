@@ -23,6 +23,7 @@ bool Satellite::Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc)
     m_events.push_back(std::move(frameEvent));
     m_handle[0] = m_events[0].GetHandle();
     m_handle[1] = m_events[1].GetHandle();
+    m_status = Status::INITED;
     return true;
 }
 
@@ -169,12 +170,14 @@ void Satellite::InternalThread()
 
 void Satellite::Finalize()
 {
+    if (m_status == Status::FINALIZE) return;
     if (!m_signal.Signal())
     {
         m_thread.detach();
         return;
     }
     m_thread.join();
+    m_status = Status::FINALIZE;
 }
 
 bool Satellite::OnFinalize(const Event* event)

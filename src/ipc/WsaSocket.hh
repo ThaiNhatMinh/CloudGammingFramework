@@ -21,7 +21,7 @@ private:
     AutoCloseEvent m_event;
 
 public:
-    WsaSocket() {};
+    WsaSocket() { TRACE;};
     WsaSocket(SOCKET handle);
     WsaSocket(WsaSocket&& other);
     WsaSocket& operator=(WsaSocket&& other);

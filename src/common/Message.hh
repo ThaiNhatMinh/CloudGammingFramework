@@ -12,8 +12,7 @@ enum Message
     MSG_START_GAME,
     MSG_START_GAME_RESP,
     MSG_STOP_GAME,
-    MSG_GAME_PORT,
-    MSG_RECONNECT
+    MSG_GAME_PORT
 };
 
 struct MessageHeader

@@ -1,13 +1,14 @@
 #include "GlfwWindow.hh"
 #include "common/Logger.hh"
 
-Window::Window():Window(WIDTH, HEIGHT, DEFAULT_NAME)
+Window::Window()
 {
 }
 
 
 Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width(width), m_height(height), m_name(name)
 {
+    TRACE;
     m_bIsWindowResize = false;
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);

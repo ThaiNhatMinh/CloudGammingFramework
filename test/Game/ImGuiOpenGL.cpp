@@ -5,10 +5,10 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
+constexpr std::size_t W = 800, H = 600;
+char buffer[W* H * 3];
 int main()
 {
-    const std::size_t W = 800, H = 600;
-    TRACE;
     Window window(W, H, "Server game");
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         LOG << "Failed to initialize OpenGL context" << std::endl;
@@ -19,7 +19,6 @@ int main()
             return -1;
         }
     }
-    TRACE;
     window.EnableVsync(true);
     InputCallback callback;
     callback.CursorPositionCallback = [](double xpos, double ypos) {};
@@ -48,12 +47,13 @@ int main()
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window.GetGlfw(), true);
     ImGui_ImplOpenGL3_Init();
-    char buffer[W* H * 3];
     bool show_demo_window, show_another_window;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     while (!cgfShouldExit())
     {
+        window.HandleEvent();
         cgfPollEvent();
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

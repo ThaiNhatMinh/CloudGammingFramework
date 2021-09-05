@@ -49,7 +49,7 @@ public:
 
     HANDLE GetHandle() const { return m_handle.get(); }
 
-    Event() = default;
+    Event() { TRACE;};
     Event& operator=(Event&& other);
     Event(Event&& other);
 };

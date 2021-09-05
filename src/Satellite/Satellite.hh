@@ -19,7 +19,8 @@ public:
         CONNECTED,
         REQUESTED_GAME,
         RECEIVING_STREAM,
-        CLOSING_GAME
+        CLOSING_GAME,
+        FINALIZE
     };
 
 private:
@@ -47,6 +48,7 @@ private:
     cgfFramefun m_frameFunc;
     std::vector<Event> m_events;
     HANDLE m_handle[MAXIMUM_WAIT_OBJECTS];
+    Status m_status;
 
 public:
     Satellite(): m_bIsReceivingFrame(false) { WsaSocket::Init(); }

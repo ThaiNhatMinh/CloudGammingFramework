@@ -8,6 +8,7 @@
 int w, h, bpp1;
 GLuint textId;
 GLuint CreateTexture(int w, int h);
+Window* window;
 void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
 {
     w = width;
@@ -15,6 +16,7 @@ void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
     bpp1 = bpp;
     std::cout << w << " " << h << " " << bpp1 << std::endl;
     textId = CreateTexture(w, h);
+    window->Resize(w, h);
 }
 
 void frameFunc(const char* pFrameData)
@@ -25,8 +27,8 @@ void frameFunc(const char* pFrameData)
 
 int main(int argc, char** argv)
 {
-    Window window(500, 500, "Client game");
-    window.EnableVsync(true);
+    window = new Window(500, 500, "Client game");
+    window->EnableVsync(true);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         LOG << "Failed to initialize OpenGL context" << std::endl;
         if (!gladLoadGL())
@@ -49,7 +51,7 @@ int main(int argc, char** argv)
     {
         return -1;
     }
-    window.SetKeyCallback([](int key, int scancode, int action, int mods)
+    window->SetKeyCallback([](int key, int scancode, int action, int mods)
     {
         InputEvent event;
         event.type = InputEvent::EventType::KEY;
@@ -67,9 +69,9 @@ int main(int argc, char** argv)
             std::cout << "ERROR\n";
         }
     });
-    while (!window.ShouldClose())
+    while (!window->ShouldClose())
     {
-        window.HandleEvent();
+        window->HandleEvent();
         cgfClientPollEvent(5);
         glViewport(0, 0, w, h);
         glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
@@ -91,7 +93,7 @@ int main(int argc, char** argv)
         glTexCoord2f(1.0, 1.0);
         glVertex2f(1.0f, -1.0f); //vertex 4
         glEnd();
-        window.SwapBuffer();
+        window->SwapBuffer();
     }
     cfgClientCloseGame();
     cgfClientFinalize();

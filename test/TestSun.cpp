@@ -16,6 +16,7 @@ int main()
     GameParameter imgui;
     imgui.Id = 2;
     imgui.ExecuteLocation = "D:\\Study\\CloudGaming\\CloudGamming\\build\\test\\Game\\Debug\\ImGuiOpenGL.exe";
+    imgui.ClientDisconnectTimeOut = 10 * 1000;
     games.push_back(imgui);
     Sun sun(&config, games);
     
