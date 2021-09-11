@@ -17,13 +17,14 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
         return false;
     }
     WsaSocket::Init();
-    if (!m_socket.Open(m_pInfo->port))
+    if (!m_socketInput.Open(m_pInfo->port) || !m_socketStream.Open(m_pInfo->port + 1))
     {
         LOG_ERROR << "Open port failed\n";
         return false;
     }
     AddEvent(m_finalize, static_cast<EventCallback>(&Planet::OnFinalize));
-    AddSocket(m_socket, nullptr, static_cast<AcceptCallback>(&Planet::OnAccept));
+    AddSocket(m_socketInput, nullptr, static_cast<AcceptCallback>(&Planet::OnAcceptInput));
+    AddSocket(m_socketStream, nullptr, static_cast<AcceptCallback>(&Planet::OnAcceptStream));
     m_pollEvent = std::thread(&Planet::InternalThread, this);
     InitKeyStatus();
     m_fpsLocker.SetFps(60);
@@ -102,7 +103,7 @@ bool Planet::QueryInformation()
     return true;
 }
 
-void Planet::OnRecv(WsaSocketInformation *sock)
+void Planet::OnRecvInput(WsaSocketInformation *sock)
 {
     if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
     sock->recvBuffer.SetCurrentPosition(0);
@@ -126,11 +127,39 @@ void Planet::OnRecv(WsaSocketInformation *sock)
     sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
 }
 
-void Planet::OnAccept(WsaSocket &&newConnect)
+void Planet::OnAcceptInput(WsaSocket &&newConnect)
 {
-    if (m_client.GetHandle() != INVALID_SOCKET)
+    if (m_clientInput.GetHandle() != INVALID_SOCKET)
     {
         LOG_ERROR << "A client already connected\n";
+        return;
+    }
+
+    m_clientInput = std::move(newConnect);
+    AddSocket(m_clientInput, static_cast<SocketCallback>(&Planet::OnRecvInput));
+
+    m_pInfo->Status = GameStatus::STREAMING;
+
+    if (m_Width == 0)
+    {
+        LOG_ERROR << "Width is not set\n";
+        throw std::exception("AAAAAAAAAA");
+    }
+    BufferStream1KB stream;
+    MessageHeader header;
+    header.code = Message::MSG_RESOLUTION;
+    stream << header << m_Width << m_Height << m_BytePerPixel;
+    if (m_clientInput.SendAll(stream.Get(), stream.Length()) < stream.Length())
+    {
+        LOG_ERROR << "Send error\n";
+    }
+}
+
+void Planet::OnAcceptStream(WsaSocket &&newConnect)
+{
+    if (m_clientStream.GetHandle() != INVALID_SOCKET)
+    {
+        LOG_ERROR << "A client stream already connected\n";
         return;
     }
 
@@ -151,32 +180,12 @@ void Planet::OnAccept(WsaSocket &&newConnect)
     } else {
         LOG_DEBUG << "SO_SNDBUF:" << iOptVal << std::endl;
     }
-
-    m_client = std::move(newConnect);
-    AddSocket(m_client, static_cast<SocketCallback>(&Planet::OnRecv));
-
-    m_pInfo->Status = GameStatus::STREAMING;
-                
-    if (m_Width != 0)
-    {
-        BufferStream1KB stream;
-        MessageHeader header;
-        header.code = Message::MSG_RESOLUTION;
-        stream << header << m_Width << m_Height << m_BytePerPixel;
-        if (m_client.SendAll(stream.Get(), stream.Length()) < stream.Length())
-        {
-            LOG_ERROR << "Send error\n";
-        }
-    } else
-    {
-        LOG_ERROR << "Width is not set\n";
-        throw std::exception("AAAAAAAAAA");
-    }
+    m_clientStream = std::move(newConnect);
+    LOG_INFO << "Client stream connected\n";
 }
 
 void Planet::OnClose(WsaSocketInformation* sock)
 {
-    m_client.Release();
     LOG_DEBUG << "Client disconnected\n";
 
     if (m_pInfo->Status != GameStatus::SHUTTING_DOWN || m_pInfo->Status != GameStatus::SHUTDOWN)
@@ -184,6 +193,7 @@ void Planet::OnClose(WsaSocketInformation* sock)
         LOG_DEBUG << "Client disconnect while game running, start timer\n";
         m_disconnectTimer.SetTime(m_pInfo->DisconnectTimeout);
     }
+    sock->socket->Release();
     // TODO: Check timeout to stop game
 }
 
@@ -211,7 +221,8 @@ void Planet::SetResolution(std::size_t w, std::size_t h)
 
 void Planet::SetFrame(const void* pData)
 {
-    if (m_client.GetHandle() == INVALID_SOCKET) return;
+    LOG_DEBUG << m_clientStream.GetHandle() << std::endl;
+    if (m_clientStream.GetHandle() == INVALID_SOCKET) return;
     std::size_t size = m_Width * m_Height * m_BytePerPixel;
     CreateFrameMsg(m_pFramePackage.get(), size + MSG_HEADER_LENGTH, pData, size);
     SendFrame();
@@ -221,7 +232,7 @@ void Planet::SetFrame(const void* pData)
 void Planet::SendFrame()
 {
     std::size_t size = m_Width * m_Height * m_BytePerPixel + MSG_HEADER_LENGTH;
-    if (m_client.SendAll(m_pFramePackage.get(), size) < size)
+    if (m_clientStream.SendAll(m_pFramePackage.get(), size) < size)
     {
         LOG_ERROR << "Send failed: " << size << std::endl;
     }

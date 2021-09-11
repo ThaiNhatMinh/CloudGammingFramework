@@ -22,6 +22,7 @@ private:
 
 public:
     WsaSocket() { TRACE;};
+    ~WsaSocket() { Release();}
     WsaSocket(SOCKET handle);
     WsaSocket(WsaSocket&& other);
     WsaSocket& operator=(WsaSocket&& other);
@@ -51,7 +52,7 @@ protected:
     typedef void (WsaSocketPollEvent::*TimerCallback)(const WaitableTimer* timer);
     struct WsaSocketInformation
     {
-        const WsaSocket* socket;
+        WsaSocket* socket;
         BufferStream<MAX_BUFFER> recvBuffer;
         /** Call after recvice data */
         SocketCallback recvCallback;
@@ -78,7 +79,7 @@ private:
 
 public:
     virtual void OnClose(WsaSocketInformation* sock) {};
-    bool AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback = nullptr, AcceptCallback accept = nullptr);
+    bool AddSocket(WsaSocket& newSocket, SocketCallback recvCallback = nullptr, AcceptCallback accept = nullptr);
     bool AddEvent(const Event& event, EventCallback callback);
     bool AddTimer(const WaitableTimer& timer, TimerCallback callback);
     void PollEvent();

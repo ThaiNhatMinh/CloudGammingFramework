@@ -50,6 +50,7 @@ public:
         if (m_method == nullptr) return;
         LOG_DEBUG << "Release handle: " << m_handle << std::endl;
         m_method(m_handle);
+        m_method = nullptr;
         m_handle = invalidValue;
     }
 };

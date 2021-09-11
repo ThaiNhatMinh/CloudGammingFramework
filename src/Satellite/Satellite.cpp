@@ -78,7 +78,7 @@ bool Satellite::SendInput(InputEvent event)
     BufferStream1KB stream;
     stream << Message::MSG_INPUT;
     stream << event;
-    if (m_gameSocket.SendAll(stream.Get(), stream.Length()) == SOCKET_ERROR)
+    if (m_gameSocketInput.SendAll(stream.Get(), stream.Length()) == SOCKET_ERROR)
     {
         LOG_ERROR << "Send error\n";
         return false;
@@ -104,19 +104,49 @@ void Satellite::OnRecvServer(WsaSocketInformation* sock)
         }
         m_gamePort = status;
         LOG_INFO << "Start game success, port from server " << m_gamePort << std::endl;
-        if (!m_gameSocket.Connect(m_serverIp, m_gamePort))
+        if (!m_gameSocketInput.Connect(m_serverIp, m_gamePort) || !m_gameSocketStream.Connect(m_serverIp, m_gamePort + 1))
         {
             LOG_ERROR << "Failed to connect to game\n";
             return;
         }
-        AddSocket(m_gameSocket, static_cast<SocketCallback>(&Satellite::OnRecvGame));
+        AddSocket(m_gameSocketStream, static_cast<SocketCallback>(&Satellite::OnRecvStream));
+        AddSocket(m_gameSocketInput, static_cast<SocketCallback>(&Satellite::OnRecvControl));
     } else
     {
         LOG_ERROR << "Unknow code: " << header.code << std::endl;
     }
 }
 
-void Satellite::OnRecvGame(WsaSocketInformation* sock)
+void Satellite::OnRecvControl(WsaSocketInformation* sock)
+{
+    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
+    sock->recvBuffer.SetCurrentPosition(0);
+
+    MessageHeader header;
+    sock->recvBuffer >> header;
+    if (header.code == Message::MSG_RESOLUTION && sock->recvBuffer.Length() >= 2 * sizeof(int))
+    {
+        int w, h;
+        char bpp;
+        sock->recvBuffer >> w >> h >> bpp;
+        m_gameWidth = w;
+        m_gameHeight = h;
+        m_bytePerPixel = bpp;
+        m_frames.Init(20, m_gameWidth * m_gameHeight * m_bytePerPixel);
+        m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
+        m_currentFrame.length = 0;
+        m_events[0].Signal();
+        m_status = Status::RECEIVING_STREAM;
+    } else
+    {
+        LOG_DEBUG << "Unknow code " << header.code << std::endl;
+        throw std::exception("Invalid message code");
+
+    }
+    sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
+}
+
+void Satellite::OnRecvStream(WsaSocketInformation* sock)
 {
     if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
     sock->recvBuffer.SetCurrentPosition(0);
@@ -141,20 +171,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
 
     MessageHeader header;
     sock->recvBuffer >> header;
-    if (header.code == Message::MSG_RESOLUTION && sock->recvBuffer.Length() >= 2 * sizeof(int))
-    {
-        int w, h;
-        char bpp;
-        sock->recvBuffer >> w >> h >> bpp;
-        m_gameWidth = w;
-        m_gameHeight = h;
-        m_bytePerPixel = bpp;
-        m_frames.Init(20, m_gameWidth * m_gameHeight * m_bytePerPixel);
-        m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
-        m_currentFrame.length = 0;
-        m_events[0].Signal();
-        m_status = Status::RECEIVING_STREAM;
-    } else if (header.code == Message::MSG_FRAME)
+    if (header.code == Message::MSG_FRAME)
     {
         m_bIsReceivingFrame = true;
     } else
@@ -209,6 +226,6 @@ bool Satellite::CloseGame()
     MessageHeader header;
     header.code = Message::MSG_STOP_GAME;
     stream << header;
-    m_gameSocket.SendAll(stream.Get(), stream.Length());
+    m_gameSocketInput.SendAll(stream.Get(), stream.Length());
     return true;
 }

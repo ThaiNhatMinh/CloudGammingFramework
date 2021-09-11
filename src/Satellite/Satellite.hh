@@ -32,7 +32,8 @@ private:
 
 private:
     WsaSocket m_serverSocket;
-    WsaSocket m_gameSocket;
+    WsaSocket m_gameSocketInput;
+    WsaSocket m_gameSocketStream;
     StreamPort m_gamePort;
     std::string m_serverIp;
     std::thread m_thread;
@@ -63,7 +64,8 @@ public:
 
 private:
     void OnRecvServer(WsaSocketInformation* sock);
-    void OnRecvGame(WsaSocketInformation* sock);
+    void OnRecvStream(WsaSocketInformation* sock);
+    void OnRecvControl(WsaSocketInformation* sock);
     bool OnFinalize(const Event* event);
     void InternalThread();
 };

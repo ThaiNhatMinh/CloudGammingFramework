@@ -26,8 +26,10 @@ private:
     Event m_launchGame;
     Event m_finalize;
     FileMapping m_launchData;
-    WsaSocket m_socket;
-    WsaSocket m_client;
+    WsaSocket m_socketInput;
+    WsaSocket m_socketStream;
+    WsaSocket m_clientInput;
+    WsaSocket m_clientStream;
     char m_KeyStatus[512];
     std::size_t m_Width;
     std::size_t m_Height;
@@ -72,8 +74,10 @@ private:
     void InternalThread();
 
     bool QueryInformation();
+    void OnRecvInput(WsaSocketInformation* sock);
     void OnRecv(WsaSocketInformation* sock);
-    void OnAccept(WsaSocket&& newConnect);
+    void OnAcceptInput(WsaSocket&& newConnect);
+    void OnAcceptStream(WsaSocket&& newConnect);
     void OnClose(WsaSocketInformation* sock) override;
     void OnDisconnectTimeout(const WaitableTimer* timer);
     bool OnFinalize(const Event* sock);
