@@ -34,7 +34,7 @@ void FpsLocker::FrameEnd()
     if (duration < m_frameTime)
     {
         int sleepTime = (m_frameTime - duration) / m_TickPerSecond * 1000;
-        // LOG_DEBUG << "duration time: " << duration << " sleepTime: " << sleepTime << std::endl;
+        LOG_DEBUG << "duration time: " << duration << " sleepTime: " << sleepTime << std::endl;
         std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(sleepTime));
     } else
     {
@@ -42,5 +42,5 @@ void FpsLocker::FrameEnd()
     }
     QueryPerformanceCounter((LARGE_INTEGER*)&m_StartTime);
     double sleep = ((m_StartTime - currentTime) *1000)/ m_TickPerSecond;
-    // LOG_DEBUG << "Time: " << sleep + duration << " Sleep time: " << sleep << std::endl;
+    LOG_DEBUG << "Time: " << sleep + duration << " Sleep time: " << sleep << std::endl;
 }

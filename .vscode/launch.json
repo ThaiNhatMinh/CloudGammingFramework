@@ -71,10 +71,17 @@
     ],
     "compounds": [
         {
-            "name": "Server/Client",
+            "name": "Server/Client Imgui",
             "configurations": [
                 "(Windows) Launch Sun",
                 "(Windows) Launch Client ImGui"
+            ],
+        },
+        {
+            "name": "Server/Client Console",
+            "configurations": [
+                "(Windows) Launch Sun",
+                "(Windows) Launch Game Console"
             ],
         }
       ]

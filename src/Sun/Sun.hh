@@ -46,7 +46,7 @@ public:
 
 private:
     const GameParameter* FindGame(GameId id);
-    void OnAccept(WsaSocket&& newConnect) override;
+    void OnAccept(WsaSocket&& newConnect);
     void OnClose(WsaSocketInformation* sock) override;
     void OnRecvFromClient(WsaSocketInformation* sock);
     void LaunchGame(const WsaSocket* client, GameId id);

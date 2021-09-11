@@ -70,10 +70,20 @@ int main(int argc, char** argv)
             std::cout << "ERROR\n";
         }
     });
+    window.SetMouseMoveCallback([](float xpos, float ypos){
+        InputEvent event;
+        event.type = InputEvent::EventType::MOUSE_MOVE;
+        event.mousePos.x = xpos;
+        event.mousePos.y = ypos;
+        if (!cgfClientSendEvent(event))
+        {
+            std::cout << "ERROR\n";
+        }
+    });
     while (!window.ShouldClose())
     {
         window.HandleEvent();
-        cgfClientPollEvent(5);
+        cgfClientPollEvent(1);
         window.SwapBuffer();
     }
     cfgClientCloseGame();

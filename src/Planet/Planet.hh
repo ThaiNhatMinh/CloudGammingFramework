@@ -73,7 +73,7 @@ private:
 
     bool QueryInformation();
     void OnRecv(WsaSocketInformation* sock);
-    void OnAccept(WsaSocket&& newConnect) override;
+    void OnAccept(WsaSocket&& newConnect);
     void OnClose(WsaSocketInformation* sock) override;
     void OnDisconnectTimeout(const WaitableTimer* timer);
     bool OnFinalize(const Event* sock);

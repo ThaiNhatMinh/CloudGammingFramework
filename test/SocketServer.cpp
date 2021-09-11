@@ -29,13 +29,13 @@ public:
             throw std::exception();
         }
         AddEvent(event, static_cast<EventCallback>(&Server::OnExit));
-        AddSocket(sock);
+        AddSocket(sock, nullptr, static_cast<AcceptCallback>(&Server::OnAccept));
         m_currentFrame.data.reset(new char[size]);
         m_currentFrame.length = 0;
         m_frames.Init(20, size);
     }
 
-    void OnAccept(WsaSocket&& newSocket) override
+    void OnAccept(WsaSocket&& newSocket)
     {
         client = std::move(newSocket);
         this->AddSocket(client, static_cast<SocketCallback>(&Server::OnRecv));

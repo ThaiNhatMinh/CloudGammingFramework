@@ -35,7 +35,7 @@ Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pCo
         throw std::exception("Listen on port failed");
     }
 
-    AddSocket(m_socket);
+    AddSocket(m_socket, nullptr, static_cast<AcceptCallback>(&Sun::OnAccept));
     std::size_t startPort = config->GetValue(PORT_RANG_START, 1000);
     std::size_t endPort = config->GetValue(PORT_RANG_END, 1000);
     for (std::size_t i = startPort; i < endPort; i++)

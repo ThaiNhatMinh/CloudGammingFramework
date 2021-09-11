@@ -23,7 +23,7 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
         return false;
     }
     AddEvent(m_finalize, static_cast<EventCallback>(&Planet::OnFinalize));
-    AddSocket(m_socket);
+    AddSocket(m_socket, nullptr, static_cast<AcceptCallback>(&Planet::OnAccept));
     m_pollEvent = std::thread(&Planet::InternalThread, this);
     InitKeyStatus();
     m_fpsLocker.SetFps(60);

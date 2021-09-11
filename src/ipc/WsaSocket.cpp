@@ -257,7 +257,7 @@ void WsaSocketPollEvent::PollEvent()
                 break;
             }
             // Accept a new connection, and add it to the socket and event lists
-            OnAccept(accept(m_sockets[IndexSocket].socket->GetHandle(), nullptr, nullptr));
+            (this->*m_sockets[IndexSocket].acceptCallback)(accept(m_sockets[IndexSocket].socket->GetHandle(), nullptr, nullptr));
         }
 
         // Process FD_READ notification
@@ -328,7 +328,7 @@ void WsaSocketPollEvent::UpdateArray()
     }
 }
 
-bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback)
+bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback, AcceptCallback acceptCallback)
 {
     if (m_sockets.size() + m_events.size() + m_timers.size() > WSA_MAXIMUM_WAIT_EVENTS)
     {
@@ -338,6 +338,7 @@ bool WsaSocketPollEvent::AddSocket(const WsaSocket& newSocket, SocketCallback re
     WsaSocketInformation info;
     info.socket = &newSocket;
     info.recvCallback = recvCallback;
+    info.acceptCallback = acceptCallback;
     m_sockets.push_back(info);
     UpdateArray();
     return true;

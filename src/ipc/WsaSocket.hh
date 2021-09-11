@@ -46,6 +46,7 @@ protected:
     const static std::size_t MAX_BUFFER = 10240;
     struct WsaSocketInformation;
     typedef void (WsaSocketPollEvent::*SocketCallback)(WsaSocketInformation* info);
+    typedef void (WsaSocketPollEvent::*AcceptCallback)(WsaSocket&& newSocket);
     typedef bool (WsaSocketPollEvent::*EventCallback)(const Event* info);
     typedef void (WsaSocketPollEvent::*TimerCallback)(const WaitableTimer* timer);
     struct WsaSocketInformation
@@ -54,6 +55,7 @@ protected:
         BufferStream<MAX_BUFFER> recvBuffer;
         /** Call after recvice data */
         SocketCallback recvCallback;
+        AcceptCallback acceptCallback;
     };
 
     struct EventInformation
@@ -75,9 +77,8 @@ private:
     std::vector<TimerInformation> m_timers;
 
 public:
-    virtual void OnAccept(WsaSocket&& newSocket) {};
     virtual void OnClose(WsaSocketInformation* sock) {};
-    bool AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback = nullptr);
+    bool AddSocket(const WsaSocket& newSocket, SocketCallback recvCallback = nullptr, AcceptCallback accept = nullptr);
     bool AddEvent(const Event& event, EventCallback callback);
     bool AddTimer(const WaitableTimer& timer, TimerCallback callback);
     void PollEvent();
