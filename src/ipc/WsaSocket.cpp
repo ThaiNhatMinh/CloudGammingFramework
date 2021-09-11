@@ -226,6 +226,11 @@ void WsaSocketPollEvent::PollEvent()
         std::size_t timerSize = m_timers.size();
         std::size_t eventTotal = m_sockets.size() + eventSize + timerSize;
         std::size_t Index = WSAWaitForMultipleEvents(eventTotal, EventArray, FALSE, WSA_INFINITE, FALSE);
+        if (Index == WSA_WAIT_FAILED)
+        {
+            LastError();
+            continue;
+        }
         Index = Index - WSA_WAIT_EVENT_0;
         if (Index < eventSize)
         {

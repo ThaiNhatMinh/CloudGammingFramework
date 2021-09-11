@@ -94,7 +94,7 @@ StreamPort Sun::LaunchGame(ClientId clientId, GameId id)
         directory = dir;
     }
     int mod = CREATE_DEFAULT_ERROR_MODE;
-    // mod |= CREATE_NEW_CONSOLE;
+    mod |= CREATE_NEW_CONSOLE;
     bool ret = CreateProcess(NULL, program,
         NULL, NULL, FALSE, mod, NULL, directory.c_str(),
         &startupInfo, &processInformation);

@@ -3,7 +3,9 @@ project(CloudGamming VERSION 1.0)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
+# set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd ")
+# SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrtd.lib ")
 include_directories(Lib)
 include_directories(Lib/glfw-3.3.4/include)
 include_directories(Lib/glew-2.1.0/include)
@@ -13,7 +15,7 @@ include_directories(src)
 
 find_library(DETOURS_LIB detours HINTS "./Lib")
 
-# add_compile_definitions(LOG_TO_FILE)
+add_compile_definitions(LOG_STD)
 
 add_subdirectory(Lib)
 add_subdirectory(src)

@@ -16,6 +16,17 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "(Windows) Launch Client ImGui",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build\\test\\Client\\Debug\\ClientImGui.exe",
+            "args": ["1000"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "(Windows) Launch Sever Socket",
             "type": "cppvsdbg",
             "request": "launch",
@@ -40,7 +51,7 @@
             "name": "(Windows) Launch Game Console",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build\\test\\Game\\Debug\\Console.exe",
+            "program": "${workspaceFolder}/build\\test\\Game\\Debug\\ImGuiOpenGL.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -63,7 +74,7 @@
             "name": "Server/Client",
             "configurations": [
                 "(Windows) Launch Sun",
-                "(Windows) Launch Client Console"
+                "(Windows) Launch Client ImGui"
             ],
         }
       ]
