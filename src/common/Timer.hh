@@ -6,32 +6,21 @@ class Timer
 {
 private:
     __int64 m_StartTime;
-    __int64 m_PauseTime;
-    __int64 m_StopTime;
     __int64 m_PrevTime;
     __int64 m_CurrentTime;
-    bool m_bStoped;
-    double m_SecondPerCount;
+    __int64 m_TickPerSecond;
     double m_DeltaTime;
     int m_FPS;
 public:
     Timer();
-    ~Timer();
-    float GetGameTime() const; // in second
-    float GetDeltaTime() const; // in second
+    double GetGameTime() const; // in microsecond
+    double GetDeltaTime() const; // in microsecond
 
     /**
      * Call before message loop
      */
     void Reset();
-    /**
-     * Call when unpause
-     */
-    void Start();
-    /**
-     * Call when pause
-     */
-    void Stop();
+
     /**
      * Call every frame
      */

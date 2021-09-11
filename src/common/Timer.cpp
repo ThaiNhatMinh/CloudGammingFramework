@@ -1,111 +1,43 @@
+#include "Win32.hh"
+#include "Module.hh"
+#include "Timer.hh"
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#include <WinSock2.h>
-
-#include "Timer.h"
-
-Timer::Timer():m_bStoped(0),m_CurrentTime(0),m_DeltaTime(0),m_PauseTime(0),m_PrevTime(0), m_SecondPerCount(0),m_StartTime(0),
-m_StopTime(0)
+Timer::Timer():m_CurrentTime(0),m_DeltaTime(0),m_PrevTime(0), m_StartTime(0)
 {
-    __int64 tickperSecond;
-    if (!QueryPerformanceFrequency((LARGE_INTEGER*)&tickperSecond))
+    if (!QueryPerformanceFrequency((LARGE_INTEGER*)&m_TickPerSecond))
     {
-        // system doesn't support hi-res timer
-        return;
+        LastError();
+        throw std::exception("Can not query performance frequency");
     }
 
-    m_SecondPerCount = 1.0 / (double)tickperSecond;
-    QueryPerformanceCounter((LARGE_INTEGER*)&m_StartTime);
+    Reset();
 }
 
-Timer::~Timer()
+double Timer::GetGameTime() const
 {
-}
-
-float Timer::GetGameTime() const
-{
-    // If we are stopped, do not count the time that has passed since
-    // we stopped.
-    //
-    // ----*---------------*------------------------------*------> time
-    //  startTime       stopTime                      currentTime
-
-    if (m_bStoped)
-        return (float)((m_StopTime - m_StartTime) * m_SecondPerCount);
-
-    // The distance currentTime - startTime includes paused time,
-    // which we do not want to count. To correct this, we can subtract
-    // the paused time from currentTime:
-    //
-    //  (mCurrTime - mPausedTime) - mBaseTime
-    //
-    //                     |<-------d------->|
-    // ----*---------------*-----------------*------------*------> time
-    // mBaseTime        mStopTime        startTime     mCurrTime
-    else return (float)((m_CurrentTime - m_PauseTime - m_StartTime) * m_SecondPerCount);
+    double duration = (m_CurrentTime - m_StartTime) * 1000000.0;
+    return (duration / m_TickPerSecond);
 
 }
 
-float Timer::GetDeltaTime() const
+double Timer::GetDeltaTime() const
 {
-    return (float)m_DeltaTime;
+    return m_DeltaTime;
 }
 
 void Timer::Reset()
 {
-    __int64 currentTime;
-    QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
-    m_StartTime = currentTime;
-    m_PrevTime = currentTime;
-    m_StopTime = 0;
-    m_bStoped = false;
-}
-
-void Timer::Start()
-{
-    __int64 startTime;
-    QueryPerformanceCounter((LARGE_INTEGER*)&startTime);
-    // Accumulate the time elapsed between stop and start pairs.
-    //
-    //                |<-------d------->|
-    // ---------------*-----------------*------------> time
-    //             m_StopTime        startTime
-
-    if (m_bStoped)
-    {
-        m_PauseTime += (startTime - m_StopTime);
-        m_PrevTime = startTime;
-        m_StopTime = 0;
-        m_bStoped = false;
-    }
-}
-
-void Timer::Stop()
-{
-    // if we already stopped, then don't do anything
-    if (!m_bStoped)
-    {
-        __int64 currentTime;
-        QueryPerformanceCounter((LARGE_INTEGER*)&currentTime);
-        m_StopTime = currentTime;
-        m_bStoped = true;
-    }
+    QueryPerformanceCounter((LARGE_INTEGER*)&m_StartTime);
+    m_PrevTime = m_StartTime;
 }
 
 void Timer::Tick()
 {
-    if (m_bStoped)
-    {
-        m_DeltaTime = 0;
-        return;
-    }
-
     // Get the time this frame.
     QueryPerformanceCounter((LARGE_INTEGER*)&m_CurrentTime);
 
     // Time difference between this frame and the previous.
-    m_DeltaTime = (m_CurrentTime - m_PrevTime) * m_SecondPerCount;
+    m_DeltaTime = (m_CurrentTime - m_PrevTime) * 1000000.0 / m_TickPerSecond;
 
     // Prepare for next frame
     m_PrevTime = m_CurrentTime;
@@ -114,7 +46,7 @@ void Timer::Tick()
     static int fps = 0;
     fps++;
     timepass += m_DeltaTime;
-    if (timepass > 1.0)
+    if (timepass >= 1.0)
     {
         m_FPS = fps;
         fps = 0;
