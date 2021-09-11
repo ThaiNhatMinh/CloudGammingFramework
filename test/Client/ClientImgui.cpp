@@ -1,9 +1,11 @@
-#include "glad/glad.h"
 #include "common/Message.hh"
+#include "common/BufferStream.hh"
+#include "cgf/CloudGammingFrameworkClient.hh"
+#include "glad/glad.h"
 #include "glfw/GlfwWindow.hh"
 #include "ipc/WsaSocket.hh"
-#include "cgf/CloudGammingFrameworkClient.hh"
-#include "common/BufferStream.hh"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 int w, h, bpp1;
 GLuint textId;
@@ -29,28 +31,6 @@ int main(int argc, char** argv)
 {
     window = new Window(500, 500, "Client game");
     window->EnableVsync(true);
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        LOG << "Failed to initialize OpenGL context" << std::endl;
-        if (!gladLoadGL())
-        {
-            LOG << GLVersion.major << ":" << GLVersion.minor << std::endl;
-            LOG << "Failed to initialize OpenGL context" << std::endl;
-            return -1;
-        }
-    }
-    if (!cgfClientInitialize(resFunc, frameFunc))
-    {
-        return -1;
-    }
-    if (!cgfClientConnect(123, "127.0.0.1", 8989))
-    {
-        return -1;
-    }
-    // Sleep(100);
-    if (!cfgClientRequestGame(2))
-    {
-        return -1;
-    }
     window->SetKeyCallback([](int key, int scancode, int action, int mods)
     {
         InputEvent event;
@@ -69,33 +49,108 @@ int main(int argc, char** argv)
             std::cout << "ERROR\n";
         }
     });
+
+    window->SetMouseMoveCallback([](float xpos, float ypos){
+        InputEvent event;
+        event.type = InputEvent::EventType::MOUSE_MOVE;
+        event.mousePos.x = xpos;
+        event.mousePos.y = ypos;
+        if (!cgfClientSendEvent(event))
+        {
+            std::cout << "ERROR\n";
+        }
+    });
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+        LOG << "Failed to initialize OpenGL context" << std::endl;
+        if (!gladLoadGL())
+        {
+            LOG << GLVersion.major << ":" << GLVersion.minor << std::endl;
+            LOG << "Failed to initialize OpenGL context" << std::endl;
+            return -1;
+        }
+    }
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window->GetGlfw(), true);
+    ImGui_ImplOpenGL3_Init();
+
+    if (!cgfClientInitialize(resFunc, frameFunc))
+    {
+        return -1;
+    }
+    bool isConnect = false;
+    char m_ip[20] = {"127.0.0.1"};
+    int m_port = 8989;
     while (!window->ShouldClose())
     {
         window->HandleEvent();
-        cgfClientPollEvent(5);
         glViewport(0, 0, w, h);
         glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
         glClear(GL_COLOR_BUFFER_BIT);
-        glFrontFace(GL_CW);
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, textId);
-        glBegin(GL_TRIANGLE_STRIP);
+        if (!isConnect)
+        {
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            ImGui::Begin("Hello, world!");
+            ImGui::Text("This is some useful text.");
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::InputText("Ip address", m_ip, 20);
+            ImGui::InputInt("Port", &m_port);
+            if (ImGui::Button("Connect"))
+            {
+                if (!cgfClientConnect(123, m_ip, m_port))
+                {
+                    ImGui::OpenPopup("ConnectFailed");
+                } else if (cfgClientRequestGame(2))
+                {
+                    isConnect = true;
+                }
+            }
 
-        glTexCoord2f(0.0, 0.0);
-        glVertex2f(-1.0f, 1.0f); //vertex 1
+            if (ImGui::BeginPopup("ConnectFailed"))
+            {
+                ImGui::Text("Failed to connect to server!");
+                ImGui::EndPopup();
+            }
+            ImGui::End();
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        } else {
+            cgfClientPollEvent(1);
+            glFrontFace(GL_CW);
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, textId);
+            glBegin(GL_TRIANGLE_STRIP);
 
-        glTexCoord2f(0.0, 1.0);
-        glVertex2f(-1.0f, -1.0f); //vertex 2
+            glTexCoord2f(0.0, 1.0);
+            glVertex2f(-1.0f, 1.0f); //vertex 1
 
-        glTexCoord2f(1.0, 0.0);
-        glVertex2f(1.0f, 1.0f); //vertex 3
+            glTexCoord2f(0.0, 0.0);
+            glVertex2f(-1.0f, -1.0f); //vertex 2
 
-        glTexCoord2f(1.0, 1.0);
-        glVertex2f(1.0f, -1.0f); //vertex 4
-        glEnd();
+            glTexCoord2f(1.0, 1.0);
+            glVertex2f(1.0f, 1.0f); //vertex 3
+
+            glTexCoord2f(1.0, 0.0);
+            glVertex2f(1.0f, -1.0f); //vertex 4
+            glEnd();
+        }
         window->SwapBuffer();
     }
-    cfgClientCloseGame();
+    if (isConnect)
+        cfgClientCloseGame();
     cgfClientFinalize();
     return 0;
 }
