@@ -1,6 +1,11 @@
 #include "GlfwWindow.hh"
 #include "common/Logger.hh"
 
+void glfwErrorCallback(int error_code,const char* des)
+{
+    LOG_ERROR << error_code << " " << des << std::endl;
+}
+
 Window::Window()
 {
 }
@@ -11,10 +16,13 @@ Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width
     TRACE;
     m_bIsWindowResize = false;
     glfwInit();
+    glfwSetErrorCallback(&glfwErrorCallback);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     m_pWindow = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
     MakeContext();
+    glfwSwapInterval(0);
     glfwSetWindowAttrib(m_pWindow, GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
     glfwSetWindowUserPointer(m_pWindow, this);
     glfwSetFramebufferSizeCallback(m_pWindow, FramebufferResizeCallback);
     glfwSetWindowPosCallback(m_pWindow, WindowMoveCallback);
