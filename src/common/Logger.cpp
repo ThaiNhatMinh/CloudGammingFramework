@@ -29,3 +29,5 @@ std::stringstream& Log::Message()
 {
 	return log;
 }
+
+LogToNull lognull;

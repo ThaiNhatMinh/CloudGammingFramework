@@ -24,7 +24,9 @@ class LogToNull
     {
         return *this;
     }
-} lognull;
+};
+
+extern LogToNull lognull;
 
 #define STR_HELPER(x) #x
 #ifdef LOG_STD
