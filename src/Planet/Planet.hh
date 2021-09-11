@@ -10,6 +10,7 @@
 #include "ipc/WaitableTimer.hh"
 #include "ipc/WsaSocket.hh"
 #include "Sun/Sun.hh"
+#include "FpsLocker.hh"
 
 /**
  * A class run within a game to communicate with Sun
@@ -34,6 +35,7 @@ private:
     std::unique_ptr<char> m_pFramePackage; 
     WaitableTimer m_disconnectTimer;
     Sun::GameRegister* m_pInfo;
+    FpsLocker m_fpsLocker;
 
 public:
     Planet() {};

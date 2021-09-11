@@ -33,7 +33,3 @@ MessageHeader CreateHeaderMsg(Message code);
 MessageHeader ParseHeaderMsg(const char* pBuffer);
 void CreateInputMsg(char* pBuffer, std::size_t bufferLength, const InputEvent& event);
 void CreateFrameMsg(char* pBuffer, std::size_t bufferLength, const void* pData, std::size_t dataLength);
-
-
-
-

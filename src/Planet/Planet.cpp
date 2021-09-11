@@ -1,6 +1,7 @@
 #include <exception>
 
 #include "common/Logger.hh"
+#include "common/Module.hh"
 #include "common/Message.hh"
 #include "Planet.hh"
 #include "Sun/Sun.hh"
@@ -25,11 +26,13 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
     AddSocket(m_socket);
     m_pollEvent = std::thread(&Planet::InternalThread, this);
     InitKeyStatus();
+    m_fpsLocker.SetFps(60);
     return true; 
 }
 
 void Planet::PollEvent()
 {
+    m_fpsLocker.FrameStart();
     if (m_inputEvents.empty()) return;
 
     InputEvent event = m_inputEvents.front();
@@ -130,11 +133,30 @@ void Planet::OnAccept(WsaSocket &&newConnect)
         LOG_ERROR << "A client already connected\n";
         return;
     }
+
+    int iOptVal = 0;
+    int iOptLen = sizeof (int);
+    int iResult = getsockopt(newConnect.GetHandle(), SOL_SOCKET, SO_SNDBUF, (char *) &iOptVal, &iOptLen);
+    if (iResult == SOCKET_ERROR)
+    {
+        LastError();
+    } else {
+        LOG_DEBUG << "SO_SNDBUF:" << iOptVal << std::endl;
+    }
+    iOptVal = m_Width * m_Height * m_BytePerPixel * 3;
+    iResult = setsockopt(newConnect.GetHandle(), SOL_SOCKET, SO_SNDBUF, (char *) &iOptVal, iOptLen);
+    if (iResult == SOCKET_ERROR)
+    {
+        LastError();
+    } else {
+        LOG_DEBUG << "SO_SNDBUF:" << iOptVal << std::endl;
+    }
+
     m_client = std::move(newConnect);
     AddSocket(m_client, static_cast<SocketCallback>(&Planet::OnRecv));
 
     m_pInfo->Status = GameStatus::STREAMING;
-
+                
     if (m_Width != 0)
     {
         BufferStream1KB stream;
@@ -148,6 +170,7 @@ void Planet::OnAccept(WsaSocket &&newConnect)
     } else
     {
         LOG_ERROR << "Width is not set\n";
+        throw std::exception("AAAAAAAAAA");
     }
 }
 
@@ -192,6 +215,7 @@ void Planet::SetFrame(const void* pData)
     std::size_t size = m_Width * m_Height * m_BytePerPixel;
     CreateFrameMsg(m_pFramePackage.get(), size + MSG_HEADER_LENGTH, pData, size);
     SendFrame();
+    m_fpsLocker.FrameEnd();
 }
 
 void Planet::SendFrame()
