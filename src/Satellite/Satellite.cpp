@@ -55,6 +55,7 @@ bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
     m_signal.Wait(100);
     m_bIsReceivingFrame = false;
     m_currentFrame.length = 0;
+    m_status = Status::CONNECTED;
     return true;
 }
 
@@ -73,6 +74,7 @@ bool Satellite::RequestGame(GameId id)
 
 bool Satellite::SendInput(InputEvent event)
 {
+    if (m_status != Status::RECEIVING_STREAM) return false;
     BufferStream1KB stream;
     stream << Message::MSG_INPUT;
     stream << event;
@@ -151,6 +153,7 @@ void Satellite::OnRecvGame(WsaSocketInformation* sock)
         m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
         m_currentFrame.length = 0;
         m_events[0].Signal();
+        m_status = Status::RECEIVING_STREAM;
     } else if (header.code == Message::MSG_FRAME)
     {
         m_bIsReceivingFrame = true;
@@ -166,17 +169,14 @@ void Satellite::InternalThread()
 {
     m_signal.Signal();
     WsaSocketPollEvent::PollEvent();
+    LOG_DEBUG << "Close InternalThread\n";
 }
 
 void Satellite::Finalize()
 {
     if (m_status == Status::FINALIZE) return;
-    if (!m_signal.Signal())
-    {
-        m_thread.detach();
-        return;
-    }
-    m_thread.join();
+    m_signal.Signal();
+    if (m_thread.joinable()) m_thread.join();
     m_status = Status::FINALIZE;
 }
 
