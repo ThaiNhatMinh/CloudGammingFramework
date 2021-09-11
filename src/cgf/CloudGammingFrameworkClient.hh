@@ -11,3 +11,5 @@ bool cfgClientCloseGame();
 bool cgfClientSendEvent(InputEvent event);
 bool cgfClientPollEvent(int timeOut);
 void cgfClientFinalize();
+
+// TODO: Move to C++ interface

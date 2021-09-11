@@ -46,3 +46,5 @@ void cgfSetFrame(const void* pData);
  * Return true if client quit game or client disconnect timeout
  */
 bool cgfShouldExit();
+
+// TODO: Move to C++ interface
