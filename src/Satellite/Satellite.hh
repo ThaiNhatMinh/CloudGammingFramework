@@ -8,7 +8,7 @@
 #include "cgf/CloudGammingFrameworkClient.hh"
 #include "ipc/Event.hh"
 #include "ipc/WsaSocket.hh"
-#include "Frames.hh"
+#include "common/Frames.hh"
 
 class Satellite : public WsaSocketPollEvent
 {
