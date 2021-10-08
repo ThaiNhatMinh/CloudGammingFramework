@@ -14,15 +14,17 @@ bool Satellite::Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc)
     ss << this;
     m_resFunc = resFunc;
     m_frameFunc = frameFunc;
-    Event resEvent, frameEvent;
-    if (!resEvent.Create("Local\\ResEvent" + ss.str()) || !frameEvent.Create("Local\\FraneEvent" + ss.str()))
+    if (!m_resolutionChangeEvent.Create("Local\\ResEvent" + ss.str()))
     {
         return false;
     }
-    m_events.push_back(std::move(resEvent));
-    m_events.push_back(std::move(frameEvent));
-    m_handle[0] = m_events[0].GetHandle();
-    m_handle[1] = m_events[1].GetHandle();
+
+    m_callbackPoll.AddEvent(m_resolutionChangeEvent, [this](const Event* e)
+    {
+        this->m_resFunc(this->m_gameWidth, this->m_gameHeight, this->m_bytePerPixel);
+        return PollAction::NONE;
+    });
+
     m_status = Status::INITED;
     return true;
 }
@@ -49,12 +51,11 @@ bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
     }
 
     m_serverIp = ip;
-    AddSocket(m_serverSocket, static_cast<SocketCallback>(&Satellite::OnRecvServer));
-    AddEvent(m_signal, static_cast<EventCallback>(&Satellite::OnFinalize));
+    POLL_ADD_SOCKET_RECV(m_socketPoll, m_serverSocket, &Satellite::OnClose, &Satellite::OnRecvServer);
+    m_socketPoll.AddEvent(m_signal, [](const Event* e){ return PollAction::STOP_POLL;});
     m_thread = std::thread(&Satellite::InternalThread, this);
     m_signal.Wait(100);
     m_bIsReceivingFrame = false;
-    m_currentFrame.length = 0;
     m_status = Status::CONNECTED;
     return true;
 }
@@ -87,16 +88,16 @@ bool Satellite::SendInput(InputEvent event)
     return true;
 }
 
-void Satellite::OnRecvServer(WsaSocketInformation* sock)
+void Satellite::OnRecvServer(WsaSocket* sock, BufferStream10KB* buffer)
 {
-    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
-    sock->recvBuffer.SetCurrentPosition(0);
+    if (buffer->Length() < MSG_HEADER_LENGTH) return;
+    buffer->SetCurrentPosition(0);
     MessageHeader header;
-    sock->recvBuffer >> header;
-    if (header.code == Message::MSG_START_GAME_RESP && sock->recvBuffer.Length() >= sizeof(StreamPort))
+    *buffer >> header;
+    if (header.code == Message::MSG_START_GAME_RESP && buffer->Length() >= sizeof(StreamPort))
     {
-        int status;
-        sock->recvBuffer >> status;
+        StreamPort status;
+        *buffer >> status;
         if (status == INVALID_PORT)
         {
             LOG_ERROR << "Start game failed\n";
@@ -104,88 +105,76 @@ void Satellite::OnRecvServer(WsaSocketInformation* sock)
         }
         m_gamePort = status;
         LOG_INFO << "Start game success, port from server " << m_gamePort << std::endl;
-        if (!m_gameSocketInput.Connect(m_serverIp, m_gamePort) || !m_gameSocketStream.Connect(m_serverIp, m_gamePort + 1))
+        if (!m_gameSocketInput.Connect(m_serverIp, m_gamePort))
         {
             LOG_ERROR << "Failed to connect to game\n";
             return;
         }
-        AddSocket(m_gameSocketStream, static_cast<SocketCallback>(&Satellite::OnRecvStream));
-        AddSocket(m_gameSocketInput, static_cast<SocketCallback>(&Satellite::OnRecvControl));
+        POLL_ADD_SOCKET_RECV(m_socketPoll, m_gameSocketInput, &Satellite::OnClose, &Satellite::OnRecvControl);
     } else
     {
         LOG_ERROR << "Unknow code: " << header.code << std::endl;
     }
 }
 
-void Satellite::OnRecvControl(WsaSocketInformation* sock)
+void Satellite::OnClose(WsaSocket* sock, BufferStream10KB* buffer)
 {
-    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
-    sock->recvBuffer.SetCurrentPosition(0);
+    if (*sock == m_gameSocketInput)
+    {
+        m_status = Status::DISCONNECTED;
+    }
+    sock->Release();
+}
+
+void Satellite::OnRecvControl(WsaSocket* sock, BufferStream10KB* buffer)
+{
+    if (buffer->Length() < MSG_HEADER_LENGTH) return;
+    buffer->SetCurrentPosition(0);
 
     MessageHeader header;
-    sock->recvBuffer >> header;
-    if (header.code == Message::MSG_RESOLUTION && sock->recvBuffer.Length() >= 2 * sizeof(int))
+    *buffer >> header;
+    if (header.code == Message::MSG_RESOLUTION && buffer->Length() >= 2 * sizeof(int))
     {
         int w, h;
         char bpp;
-        sock->recvBuffer >> w >> h >> bpp;
+        *buffer >> w >> h >> bpp;
         m_gameWidth = w;
         m_gameHeight = h;
         m_bytePerPixel = bpp;
-        m_frames.Init(20, m_gameWidth * m_gameHeight * m_bytePerPixel);
-        m_currentFrame.data.reset(new char[m_gameWidth * m_gameHeight * m_bytePerPixel]);
-        m_currentFrame.length = 0;
-        m_events[0].Signal();
+        m_resolutionChangeEvent.Signal();
         m_status = Status::RECEIVING_STREAM;
     } else
     {
         LOG_DEBUG << "Unknow code " << header.code << std::endl;
         throw std::exception("Invalid message code");
-
     }
-    sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
-}
-
-void Satellite::OnRecvStream(WsaSocketInformation* sock)
-{
-    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
-    sock->recvBuffer.SetCurrentPosition(0);
-    if (m_bIsReceivingFrame)
+    *buffer >> header;
+    if (header.code == Message::MSG_INIT && buffer->Length() >= sizeof(uint32_t))
     {
-        std::size_t size = m_gameWidth * m_gameHeight * m_bytePerPixel;
-        std::size_t byteRemain = size - m_currentFrame.length;
-        std::size_t byteToCopy = sock->recvBuffer.Length();
-        if (byteToCopy > byteRemain) byteToCopy = byteRemain;
-        sock->recvBuffer.Extract(m_currentFrame.data.get() + m_currentFrame.length, byteToCopy);
-        m_currentFrame.length += byteToCopy;
-        if (m_currentFrame.length == size)
+        uint32_t numSocket;
+        std::vector<uint32_t> bytePerSocket;
+        *buffer >> numSocket;
+        for (std::size_t i = 0; i < numSocket; i++)
         {
-            m_frames.PushBack(m_currentFrame.data.get());
-            m_currentFrame.length = 0;
-            m_bIsReceivingFrame = false;
-            m_events[1].Signal();
+            uint32_t byte;
+            *buffer >> byte;
+            bytePerSocket.push_back(byte);
         }
-        sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
-        return;
+        if (!m_streamController.Init(m_serverIp, m_gamePort + 1, bytePerSocket)) throw std::exception("Failed to init stream controller");
+        m_callbackPoll.AddEvent(m_streamController.GetSignal(), [this](const Event* e)
+        {
+            this->m_frameFunc(this->m_streamController.GetFrame());
+            if (this->m_streamController.NumFrameRemain() == 0) e->Reset();
+            return PollAction::NONE;
+        });
     }
-
-    MessageHeader header;
-    sock->recvBuffer >> header;
-    if (header.code == Message::MSG_FRAME)
-    {
-        m_bIsReceivingFrame = true;
-    } else
-    {
-        LOG_DEBUG << "Unknow code " << header.code << std::endl;
-        throw std::exception("Invalid message code");
-    }
-    sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
+    buffer->SetCurrentPosition(buffer->Length());
 }
 
 void Satellite::InternalThread()
 {
     m_signal.Signal();
-    WsaSocketPollEvent::PollEvent();
+    m_socketPoll.PollSocket(INFINITE);
     LOG_DEBUG << "Close InternalThread\n";
 }
 
@@ -193,6 +182,7 @@ void Satellite::Finalize()
 {
     if (m_status == Status::FINALIZE) return;
     m_signal.Signal();
+    m_streamController.Stop();
     if (m_thread.joinable()) m_thread.join();
     m_status = Status::FINALIZE;
 }
@@ -204,19 +194,7 @@ bool Satellite::OnFinalize(const Event* event)
 
 bool Satellite::PollEvent(std::size_t timeout)
 {
-    DWORD index = WaitForMultipleObjects(m_events.size(), m_handle, false, timeout);
-    if (index == WAIT_TIMEOUT || index == WAIT_FAILED) return false;
-    index -= WAIT_OBJECT_0;
-    if (index == 0) m_resFunc(m_gameWidth, m_gameHeight, m_bytePerPixel);
-    else if (index == 1)
-    {
-        auto frame = m_frames.PopFront();
-        m_frameFunc(frame);
-    } else
-    {
-        LOG_ERROR << "Invalid index:" << index << std::endl;
-        return false;
-    }
+    m_callbackPoll.PollOnce(timeout);
     return true;
 }
 
