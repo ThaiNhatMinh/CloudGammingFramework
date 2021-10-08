@@ -6,7 +6,7 @@ Timer::Timer():m_CurrentTime(0),m_DeltaTime(0),m_PrevTime(0), m_StartTime(0)
 {
     if (!QueryPerformanceFrequency((LARGE_INTEGER*)&m_TickPerSecond))
     {
-        LastError();
+        LASTERROR;
         throw std::exception("Can not query performance frequency");
     }
 

@@ -1,7 +1,7 @@
 #include "Logger.hh"
 #include "Module.hh"
 
-void LastErrorWithCode(DWORD error)
+void LastErrorWithCode(DWORD error, const char* func, int line)
 {
     LPVOID lpMsgBuf;
     FormatMessage(
@@ -15,17 +15,17 @@ void LastErrorWithCode(DWORD error)
         0, NULL);
 
     LocalFree(lpMsgBuf);
-    LOG_ERROR << (char*)lpMsgBuf << std::endl;
+    LOG << func << ":" << line << " " << (char*)lpMsgBuf << std::endl;
 }
 
-void LastError()
+void LastError(const char* func, int line)
 {
-    LastErrorWithCode(GetLastError());
+    LastErrorWithCode(GetLastError(), func, line);
 }
 
-void LastSocketError()
+void LastSocketError(const char* func, int line)
 {
-    LastErrorWithCode(WSAGetLastError());
+    LastErrorWithCode(WSAGetLastError(), func, line);
 }
 HMODULE CheckModule(const char* module)
 {
@@ -37,7 +37,7 @@ HMODULE CheckModule(const char* module)
         if (hMod == NULL)
         {
             LOG << module << " load failed" << std::endl;
-            LastError();
+            LASTERROR;
         }
     }
     return hMod;

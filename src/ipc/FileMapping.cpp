@@ -15,7 +15,7 @@ bool FileMapping::Create(const std::string &fileName, std::size_t numByte)
     if (fileMap == NULL)
     {
         LOG_ERROR << "Open file mapping failed: " << std::endl;
-        LastError();
+        LASTERROR;
         return false;
     }
 
@@ -23,7 +23,7 @@ bool FileMapping::Create(const std::string &fileName, std::size_t numByte)
     if (address == NULL)
     {
         LOG_ERROR << "Map view of file failed: " << std::endl;
-        LastError();
+        LASTERROR;
         return false;
     }
 
@@ -51,14 +51,14 @@ bool FileMapping::Open(const std::string &fileName, std::size_t numByte)
     if (hMapFile == NULL)
     {
         LOG_ERROR << "OpenFileMapping failed: " << std::endl;
-        LastError();
+        LASTERROR;
         return false;
     }
     AutoCloseMapView address = MapViewOfFile(hMapFile.get(), FILE_MAP_ALL_ACCESS, 0, 0, numByte);
     if (address == NULL)
     {
         LOG_ERROR << "MapViewOfFile failed: " << std::endl;
-        LastError();
+        LASTERROR;
         return false;
     }
 

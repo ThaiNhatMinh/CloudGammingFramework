@@ -7,6 +7,7 @@ class Event: public NonCopyable
 {
 private:
     AutoCloseHandle m_handle;
+    std::string m_name;
 
 public:
     /**
@@ -45,7 +46,7 @@ public:
      * 
      * @param timeOut In milisecond
      */
-    bool Wait(DWORD timeOut = INFINITE) const;
+    bool Wait(std::size_t timeOut = INFINITE) const;
 
     HANDLE GetHandle() const { return m_handle.get(); }
 

@@ -6,7 +6,7 @@ bool WaitableTimer::Create(const std::string &name, bool manualReset)
     HANDLE handle = CreateWaitableTimer(nullptr, manualReset, name.c_str());
     if (handle == INVALID_HANDLE_VALUE)
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     m_name = name;
@@ -19,7 +19,7 @@ bool WaitableTimer::Open(const std::string &name)
     HANDLE handle = OpenWaitableTimer(TIMER_ALL_ACCESS , FALSE, name.c_str());
     if (handle == INVALID_HANDLE_VALUE)
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     m_name = name;
@@ -35,7 +35,7 @@ bool WaitableTimer::SetTime(std::size_t timeInMs, std::size_t period) const
 
     if (SetWaitableTimer(m_handle.get(), &large, period, nullptr, nullptr, false) == FALSE)
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     return true;
@@ -45,7 +45,7 @@ bool WaitableTimer::Cancel() const
 {
     if (CancelWaitableTimer(m_handle.get()) == FALSE)
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     return true;

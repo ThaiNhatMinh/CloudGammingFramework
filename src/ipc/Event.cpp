@@ -8,10 +8,11 @@ bool Event::Create(const std::string& name, bool initialState, bool manualReset)
     if (handle == NULL)
     {
         LOG_ERROR << "CreateEvent failed:" << std::endl;
-        LastError();
+        LASTERROR;
         return false;
     }
     m_handle = std::move(handle);
+    m_name = name;
     return true;
 }
 
@@ -21,10 +22,11 @@ bool Event::Open(const std::string& name)
     if (handle == NULL)
     {
         LOG_ERROR << "OpenEvent failed:" << std::endl;
-        LastError();
+        LASTERROR;
         return false;
     }
     m_handle = std::move(handle);
+    m_name = name;
     return true;
 }
 
@@ -32,7 +34,7 @@ bool Event::Reset() const
 {
     if (!ResetEvent(m_handle.get()))
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     return true;
@@ -42,20 +44,20 @@ bool Event::Signal() const
 {
     if (!SetEvent(m_handle.get()))
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     return true;
 }
 
-bool Event::Wait(DWORD timeOut) const
+bool Event::Wait(std::size_t timeOut) const
 {
     DWORD res = WaitForSingleObject(m_handle.get(), timeOut);
     if (res == WAIT_OBJECT_0) return true;
     if (res == WAIT_TIMEOUT) return false;
     if (res == WAIT_FAILED)
     {
-        LastError();
+        LASTERROR;
         return false;
     }
     return false;
