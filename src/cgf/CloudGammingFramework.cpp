@@ -28,9 +28,9 @@ void cgfFinalize()
     myPlanet.Finalize();
 }
 
-void cgfSetResolution(unsigned int width, unsigned int height)
+void cgfSetResolution(unsigned int width, unsigned int height, unsigned char bpp)
 {
-    myPlanet.SetResolution(width, height);
+    myPlanet.SetResolution(width, height, bpp);
 }
 
 void cgfSetFrame(const void* pData)

@@ -184,7 +184,7 @@ struct InputEvent
 
 typedef unsigned int GameId;
 typedef unsigned int ClientId;
-typedef unsigned int StreamPort;
+typedef unsigned short StreamPort;
 
 const GameId INVALID_GAMEID = 0;
 const ClientId INVALID_CLIENTID = 0;

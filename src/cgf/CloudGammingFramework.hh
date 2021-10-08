@@ -35,7 +35,7 @@ int cgfGetKeyStatus(Key key);
 
 void cgfFinalize();
 
-void cgfSetResolution(unsigned int width, unsigned int height);
+void cgfSetResolution(unsigned int width, unsigned int height, unsigned char bpp);
 
 /**
  * 3 byte per pixel
