@@ -15,4 +15,5 @@ public:
 
     const char* PopFront();
     void PushBack(const char* pData);
+    uint32_t Length();
 };

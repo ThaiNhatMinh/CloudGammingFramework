@@ -14,6 +14,7 @@ void Frames::Init(std::size_t numFrame, std::size_t frameSize)
 
 const char* Frames::PopFront()
 {
+    if (m_frontPos == m_backPos) return m_frames[m_frontPos].get();
     char* pRes = m_frames[m_frontPos].get();
     m_frontPos++;
     if (m_frontPos >= m_frames.size())
@@ -31,4 +32,11 @@ void Frames::PushBack(const char* pData)
     {
         m_backPos = 0;
     }
+}
+
+uint32_t Frames::Length()
+{
+    if (m_frontPos == m_backPos) return 0;
+    if (m_backPos > m_frontPos) return m_backPos - m_frontPos;
+    if (m_backPos < m_frontPos) return m_frames.size() - (m_frontPos - m_backPos);
 }
