@@ -16,7 +16,8 @@ struct GameParameter;
 /**
  * Place that control everything
  */
-class Sun : public WsaSocketPollEvent {
+class Sun
+{
 public:
     typedef struct
     {
@@ -38,17 +39,19 @@ private:
     WsaSocket m_socket;
     std::list<std::pair<WsaSocket, ClientId>> m_clients;
     std::thread m_monitorProcess;
-    PollHandle m_pollProcess;
+    PollHandle64 m_pollProcess;
+    PollHandle64 m_pollSocket;
 
 public:
     Sun(Configuration* config, const std::vector<GameParameter>& gamedb);
     ~Sun();
+    void Start();
 
 private:
     const GameParameter* FindGame(GameId id);
-    void OnAccept(WsaSocket&& newConnect);
-    void OnClose(WsaSocketInformation* sock) override;
-    void OnRecvFromClient(WsaSocketInformation* sock);
+    void OnAccept(WsaSocket* newConnect, BufferStream<MAX_BUFFER>*);
+    void OnClose(WsaSocket* sock, BufferStream<MAX_BUFFER>*);
+    void OnRecvFromClient(WsaSocket* sock, BufferStream<MAX_BUFFER>*);
     void LaunchGame(const WsaSocket* client, GameId id);
     StreamPort LaunchGame(ClientId clientId, GameId id);
     StreamPort FindFreePort();
@@ -56,6 +59,6 @@ private:
     ClientId FindClient(const WsaSocket* client);
     void StartWaitingForClient();
     void MonitorProcess();
-    PollHandle::Action OnProcessClose(HANDLE handle);
-    PollHandle::Action OnEventPollProcess(HANDLE handle);
+    PollAction OnProcessClose(HANDLE handle);
+    PollAction OnEventPollProcess(HANDLE handle);
 };

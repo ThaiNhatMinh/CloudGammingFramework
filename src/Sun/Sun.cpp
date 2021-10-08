@@ -35,10 +35,10 @@ Sun::Sun(Configuration* config, const std::vector<GameParameter>& gamedb): m_pCo
         throw std::exception("Listen on port failed");
     }
 
-    AddSocket(m_socket, nullptr, static_cast<AcceptCallback>(&Sun::OnAccept));
-    std::size_t startPort = config->GetValue(PORT_RANG_START, 1000);
-    std::size_t endPort = config->GetValue(PORT_RANG_END, 1000);
-    for (std::size_t i = startPort; i < endPort; i++)
+    POLL_ADD_SOCKET_LISTEN(m_pollSocket, m_socket, &Sun::OnClose, &Sun::OnAccept);
+    StreamPort startPort = config->GetValue(PORT_RANG_START, 1000);
+    StreamPort endPort = config->GetValue(PORT_RANG_END, 1000);
+    for (StreamPort i = startPort; i < endPort; i++)
     {
         m_gameInstances[i].Id = INVALID_GAMEID;
     }
@@ -57,6 +57,11 @@ Sun::~Sun()
            TerminateProcess(el.second.ProcessHandle, -3);
        }
     }
+}
+
+void Sun::Start()
+{
+    m_pollSocket.PollSocket(INFINITE);
 }
 
 StreamPort Sun::LaunchGame(ClientId clientId, GameId id)
@@ -99,8 +104,8 @@ StreamPort Sun::LaunchGame(ClientId clientId, GameId id)
         NULL, NULL, FALSE, mod, NULL, directory.c_str(),
         &startupInfo, &processInformation);
     if (!ret) {
-        LOG_ERROR << "Game Start failed: ";
-        LastError();
+        LOG_ERROR << "Game Start failed: \n";
+        LASTERROR;
         return INVALID_PORT;
     }
     LOG_DEBUG << "Waiting for process idle: " << WaitForInputIdle(processInformation.hProcess, 500) << std::endl;
@@ -126,7 +131,7 @@ StreamPort Sun::LaunchGame(ClientId clientId, GameId id)
         if (!TerminateProcess(processInformation.hProcess, -1))
         {
             LOG_ERROR << "Failed to terminate process:" << std::endl;
-            LastError();
+            LASTERROR;
         }
         return INVALID_PORT;
     }
@@ -165,18 +170,18 @@ StreamPort Sun::FindFreePort()
     return INVALID_PORT;
 }
 
-void Sun::OnAccept(WsaSocket&& newConnect)
+void Sun::OnAccept(WsaSocket* newConnect, BufferStream<MAX_BUFFER>*)
 {
     // TODO: Start timer to waiting for MSG_INIT
-    m_clients.emplace_back(std::move(newConnect), INVALID_CLIENTID);
-    AddSocket(m_clients.back().first, static_cast<SocketCallback>(&Sun::OnRecvFromClient));
+    m_clients.emplace_back(std::move(*newConnect), INVALID_CLIENTID);
+    POLL_ADD_SOCKET_RECV(m_pollSocket, m_clients.back().first, &Sun::OnClose, &Sun::OnRecvFromClient);
 }
 
-void Sun::OnClose(WsaSocketInformation* sock)
+void Sun::OnClose(WsaSocket* sock, BufferStream<MAX_BUFFER>*)
 {
     for (auto iter = m_clients.begin(); iter != m_clients.end(); iter++)
     {
-        if (iter->first.GetHandle() == sock->socket->GetHandle())
+        if (iter->first == *sock)
         {
             // StreamPort port = FindExistRunningGame(iter->second);
             // if (port == INVALID_PORT)
@@ -187,24 +192,24 @@ void Sun::OnClose(WsaSocketInformation* sock)
     }
 }
 
-void Sun::OnRecvFromClient(WsaSocketInformation* sock)
+void Sun::OnRecvFromClient(WsaSocket* sock, BufferStream<MAX_BUFFER>* buffer)
 {
-    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
-    sock->recvBuffer.SetCurrentPosition(0);
+    if (buffer->Length() < MSG_HEADER_LENGTH) return;
+    buffer->SetCurrentPosition(0);
     MessageHeader header;
-    sock->recvBuffer >> header;
-    if (header.code == Message::MSG_START_GAME && sock->recvBuffer.Length() >= sizeof(GameId))
+    *buffer >> header;
+    if (header.code == Message::MSG_START_GAME && buffer->Length() >= sizeof(GameId))
     {
         GameId id;
-        sock->recvBuffer >> id;
-        LaunchGame(sock->socket, id);
-    } else if (header.code == Message::MSG_INIT && sock->recvBuffer.Length() >= sizeof(ClientId))
+        *buffer >> id;
+        LaunchGame(sock, id);
+    } else if (header.code == Message::MSG_INIT && buffer->Length() >= sizeof(ClientId))
     {
         ClientId id;
-        sock->recvBuffer >> id;
+        *buffer >> id;
         for (auto& el : m_clients)
         {
-            if (el.first == *sock->socket)
+            if (el.first == *sock)
             {
                 el.second = id;
                 break;
@@ -281,7 +286,7 @@ void Sun::MonitorProcess()
     m_pollProcess.Poll(INFINITE);
 }
 
-PollHandle::Action Sun::OnProcessClose(HANDLE handle)
+PollAction Sun::OnProcessClose(HANDLE handle)
 {
     GameInstance* instance;
     for(auto& el : m_gameInstances)
@@ -296,7 +301,7 @@ PollHandle::Action Sun::OnProcessClose(HANDLE handle)
     DWORD exitCode = 0;
     if (GetExitCodeProcess(handle, &exitCode) == 0)
     {
-        LastError();
+        LASTERROR;
     }
     LOG_DEBUG << "Process close with code: " << exitCode << std::endl;
     instance->Id = INVALID_GAMEID;
@@ -308,10 +313,10 @@ PollHandle::Action Sun::OnProcessClose(HANDLE handle)
         LOG_ERROR << "Process unexpect close\n";
     }
 
-    return PollHandle::Action::REMOVE;
+    return PollAction::REMOVE;
 }
 
-PollHandle::Action Sun::OnEventPollProcess(HANDLE handle)
+PollAction Sun::OnEventPollProcess(HANDLE handle)
 {
-    return PollHandle::Action::NONE;
+    return PollAction::NONE;
 }
