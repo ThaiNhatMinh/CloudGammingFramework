@@ -6,6 +6,7 @@
 #include "Planet.hh"
 #include "Sun/Sun.hh"
 #include "ipc/Named.hh"
+#include "StreamInformation.hh"
 
 bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
 {
@@ -17,17 +18,17 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
         return false;
     }
     WsaSocket::Init();
-    if (!m_socketInput.Open(m_pInfo->port) || !m_socketStream.Open(m_pInfo->port + 1))
+    if (!m_socketControl.Open(m_pInfo->port))
     {
         LOG_ERROR << "Open port failed\n";
         return false;
     }
-    AddEvent(m_finalize, static_cast<EventCallback>(&Planet::OnFinalize));
-    AddSocket(m_socketInput, nullptr, static_cast<AcceptCallback>(&Planet::OnAcceptInput));
-    AddSocket(m_socketStream, nullptr, static_cast<AcceptCallback>(&Planet::OnAcceptStream));
+    m_socketPoll.AddEvent(m_finalize, std::bind(&Planet::OnFinalize, this, std::placeholders::_1));
+    POLL_ADD_SOCKET_LISTEN(m_socketPoll, m_socketControl, &Planet::OnClose, &Planet::OnAcceptControl);
     m_pollEvent = std::thread(&Planet::InternalThread, this);
     InitKeyStatus();
     m_fpsLocker.SetFps(60);
+    m_numsocket = 2;
     return true; 
 }
 
@@ -63,7 +64,7 @@ void Planet::InternalThread()
      * - Waiting for client
      * - Waiting for input and put to queue
      */
-    WsaSocketPollEvent::PollEvent();
+    m_socketPoll.PollSocket(INFINITE);
 }
 
 bool Planet::QueryInformation()
@@ -99,22 +100,22 @@ bool Planet::QueryInformation()
     }
     m_pInfo = m_launchData.Get<Sun::GameRegister>();
     m_launchGame.Signal();
-    AddTimer(m_disconnectTimer, static_cast<TimerCallback>(&Planet::OnDisconnectTimeout));
+    m_socketPoll.AddTimer(m_disconnectTimer, std::bind(&Planet::OnDisconnectTimeout, this, std::placeholders::_1));
     return true;
 }
 
-void Planet::OnRecvInput(WsaSocketInformation *sock)
+void Planet::OnRecvControl(WsaSocket* sock, BufferStream10KB* buffer)
 {
-    if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
-    sock->recvBuffer.SetCurrentPosition(0);
+    if (buffer->Length() < MSG_HEADER_LENGTH) return;
+    buffer->SetCurrentPosition(0);
     
     MessageHeader header;
-    sock->recvBuffer >> header;
+    *buffer >> header;
     constexpr std::size_t size = sizeof(InputEvent);
-    if (header.code == Message::MSG_INPUT && sock->recvBuffer.Length() >= size)
+    if (header.code == Message::MSG_INPUT && buffer->Length() >= size)
     {
         InputEvent event;
-        sock->recvBuffer >> event;
+        *buffer >> event;
         m_inputEvents.push(event);
     } else if (header.code == Message::MSG_STOP_GAME)
     {
@@ -124,68 +125,43 @@ void Planet::OnRecvInput(WsaSocketInformation *sock)
         LOG_ERROR << "Unknow message code: " << header.code << std::endl;
         throw std::exception("Unknow message code");
     }
-    sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
+    buffer->SetCurrentPosition(buffer->Length());
 }
 
-void Planet::OnAcceptInput(WsaSocket &&newConnect)
+void Planet::OnAcceptControl(WsaSocket* newConnect, BufferStream10KB* buffer)
 {
-    if (m_clientInput.GetHandle() != INVALID_SOCKET)
+    if (m_clientControl.GetHandle() != INVALID_SOCKET)
     {
         LOG_ERROR << "A client already connected\n";
         return;
     }
 
-    m_clientInput = std::move(newConnect);
-    AddSocket(m_clientInput, static_cast<SocketCallback>(&Planet::OnRecvInput));
-
+    m_clientControl = std::move(*newConnect);
+    POLL_ADD_SOCKET_RECV(m_socketPoll, m_clientControl, &Planet::OnClose, &Planet::OnRecvControl);
     m_pInfo->Status = GameStatus::STREAMING;
 
     if (m_Width == 0)
     {
         LOG_ERROR << "Width is not set\n";
-        throw std::exception("AAAAAAAAAA");
+        throw std::exception("Width is not set");
     }
     BufferStream1KB stream;
     MessageHeader header;
     header.code = Message::MSG_RESOLUTION;
     stream << header << m_Width << m_Height << m_BytePerPixel;
-    if (m_clientInput.SendAll(stream.Get(), stream.Length()) < stream.Length())
+    header.code = Message::MSG_INIT;
+    stream << header << m_numsocket << m_streamController.GetBytePerSocket();
+    if (m_clientControl.SendAll(stream.Get(), stream.Length()) < stream.Length())
     {
         LOG_ERROR << "Send error\n";
     }
+    LOG_INFO << "Client connected\n";
 }
 
-void Planet::OnAcceptStream(WsaSocket &&newConnect)
+void Planet::OnClose(WsaSocket* sock, BufferStream10KB* buffer)
 {
-    if (m_clientStream.GetHandle() != INVALID_SOCKET)
-    {
-        LOG_ERROR << "A client stream already connected\n";
-        return;
-    }
-
-    int iOptVal = 0;
-    int iOptLen = sizeof (int);
-    int iResult = getsockopt(newConnect.GetHandle(), SOL_SOCKET, SO_SNDBUF, (char *) &iOptVal, &iOptLen);
-    if (iResult == SOCKET_ERROR)
-    {
-        LastError();
-    } else {
-        LOG_DEBUG << "SO_SNDBUF:" << iOptVal << std::endl;
-    }
-    iOptVal = m_Width * m_Height * m_BytePerPixel * 3;
-    iResult = setsockopt(newConnect.GetHandle(), SOL_SOCKET, SO_SNDBUF, (char *) &iOptVal, iOptLen);
-    if (iResult == SOCKET_ERROR)
-    {
-        LastError();
-    } else {
-        LOG_DEBUG << "SO_SNDBUF:" << iOptVal << std::endl;
-    }
-    m_clientStream = std::move(newConnect);
-    LOG_INFO << "Client stream connected\n";
-}
-
-void Planet::OnClose(WsaSocketInformation* sock)
-{
+    sock->Release();
+    if (*sock != m_clientControl) return;
     LOG_DEBUG << "Client disconnected\n";
 
     if (m_pInfo->Status != GameStatus::SHUTTING_DOWN || m_pInfo->Status != GameStatus::SHUTDOWN)
@@ -193,8 +169,6 @@ void Planet::OnClose(WsaSocketInformation* sock)
         LOG_DEBUG << "Client disconnect while game running, start timer\n";
         m_disconnectTimer.SetTime(m_pInfo->DisconnectTimeout);
     }
-    sock->socket->Release();
-    // TODO: Check timeout to stop game
 }
 
 int Planet::GetKeyStatus(Key key)
@@ -204,38 +178,30 @@ int Planet::GetKeyStatus(Key key)
 
 void Planet::Finalize()
 {
-    TRACE;
     m_pInfo->Status = GameStatus::SHUTDOWN;
     m_finalize.Signal();
     m_pollEvent.join();
+    m_streamController.StopPoll();
     LOG_DEBUG << "Finalize planet\n";
 }
 
-void Planet::SetResolution(std::size_t w, std::size_t h)
+void Planet::SetResolution(uint32_t w, uint32_t h, uint8_t bpp)
 {
     m_Width = w;
     m_Height = h;
-    m_pFramePackage.reset(new char[w*h*m_BytePerPixel + MSG_HEADER_LENGTH]);
-    
+    m_BytePerPixel = bpp;
+    StreamInformation info;
+    info.Width = w;
+    info.Heigh = h;
+    info.BytePerPixel = bpp;
+    info.NumSocket = m_numsocket;
+    m_streamController.SetInformation(info, m_pInfo->port + 1);
 }
 
 void Planet::SetFrame(const void* pData)
 {
-    LOG_DEBUG << m_clientStream.GetHandle() << std::endl;
-    if (m_clientStream.GetHandle() == INVALID_SOCKET) return;
-    std::size_t size = m_Width * m_Height * m_BytePerPixel;
-    CreateFrameMsg(m_pFramePackage.get(), size + MSG_HEADER_LENGTH, pData, size);
-    SendFrame();
+    m_streamController.SetFrame(pData);
     m_fpsLocker.FrameEnd();
-}
-
-void Planet::SendFrame()
-{
-    std::size_t size = m_Width * m_Height * m_BytePerPixel + MSG_HEADER_LENGTH;
-    if (m_clientStream.SendAll(m_pFramePackage.get(), size) < size)
-    {
-        LOG_ERROR << "Send failed: " << size << std::endl;
-    }
 }
 
 bool Planet::ShouldExit()
@@ -250,15 +216,16 @@ bool Planet::ShouldExit()
     return false;
 }
 
-bool Planet::OnFinalize(const Event* sock)
+PollAction Planet::OnFinalize(const Event* sock)
 {
-    return false;
+    return PollAction::STOP_POLL;
 }
 
-void Planet::OnDisconnectTimeout(const WaitableTimer* timer)
+PollAction Planet::OnDisconnectTimeout(const WaitableTimer* timer)
 {
     LOG_WARN << "Client disconnect timeout, closing game\n";
     m_pInfo->Status = GameStatus::SHUTTING_DOWN;
+    return PollAction::NONE;
 }
 
 void Planet::InitKeyStatus()

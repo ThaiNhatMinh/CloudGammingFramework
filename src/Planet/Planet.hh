@@ -9,13 +9,15 @@
 #include "ipc/FileMapping.hh"
 #include "ipc/WaitableTimer.hh"
 #include "ipc/WsaSocket.hh"
+#include "ipc/PollHandle.hh"
 #include "Sun/Sun.hh"
 #include "FpsLocker.hh"
+#include "StreamController.hh"
 
 /**
  * A class run within a game to communicate with Sun
  */
-class Planet : public WsaSocketPollEvent
+class Planet
 {
 private:
     GraphicApi m_graphicApi;
@@ -26,18 +28,18 @@ private:
     Event m_launchGame;
     Event m_finalize;
     FileMapping m_launchData;
-    WsaSocket m_socketInput;
-    WsaSocket m_socketStream;
-    WsaSocket m_clientInput;
-    WsaSocket m_clientStream;
+    WsaSocket m_socketControl;
+    WsaSocket m_clientControl;
     char m_KeyStatus[512];
-    std::size_t m_Width;
-    std::size_t m_Height;
+    uint32_t m_Width;
+    uint32_t m_Height;
     unsigned char m_BytePerPixel = 3;
-    std::unique_ptr<char> m_pFramePackage; 
     WaitableTimer m_disconnectTimer;
     Sun::GameRegister* m_pInfo;
     FpsLocker m_fpsLocker;
+    StreamController m_streamController;
+    uint32_t m_numsocket;
+    PollHandle64 m_socketPoll;
 
 public:
     Planet() {};
@@ -62,7 +64,7 @@ public:
 
     void Finalize();
 
-    void SetResolution(std::size_t w, std::size_t h);
+    void SetResolution(uint32_t w, uint32_t h, uint8_t bpp);
 
     void SetFrame(const void* pData);
 
@@ -74,13 +76,12 @@ private:
     void InternalThread();
 
     bool QueryInformation();
-    void OnRecvInput(WsaSocketInformation* sock);
-    void OnRecv(WsaSocketInformation* sock);
-    void OnAcceptInput(WsaSocket&& newConnect);
-    void OnAcceptStream(WsaSocket&& newConnect);
-    void OnClose(WsaSocketInformation* sock) override;
-    void OnDisconnectTimeout(const WaitableTimer* timer);
-    bool OnFinalize(const Event* sock);
+    void OnRecvControl(WsaSocket* sock, BufferStream10KB* buffer);
+    void OnRecv(WsaSocket* sock, BufferStream10KB* buffer);
+    void OnAcceptControl(WsaSocket* sock, BufferStream10KB* buffer);
+    void OnClose(WsaSocket* sock, BufferStream10KB* buffer);
+    PollAction OnDisconnectTimeout(const WaitableTimer* timer);
+    PollAction OnFinalize(const Event* sock);
     void InitKeyStatus();
     void SendFrame();
 };

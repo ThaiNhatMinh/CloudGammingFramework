@@ -9,7 +9,7 @@ FpsLocker::FpsLocker()
 {
     if (!QueryPerformanceFrequency((LARGE_INTEGER*)&m_TickPerSecond))
     {
-        LastError();
+        LASTERROR;
         throw std::exception("Can not query performance frequency");
     }
     QueryPerformanceCounter((LARGE_INTEGER*)&m_StartTime);
@@ -34,13 +34,13 @@ void FpsLocker::FrameEnd()
     if (duration < m_frameTime)
     {
         int sleepTime = (m_frameTime - duration) / m_TickPerSecond * 1000;
-        LOG_DEBUG << "duration time: " << duration << " sleepTime: " << sleepTime << std::endl;
+        // LOG_DEBUG << "duration time: " << duration << " sleepTime: " << sleepTime << std::endl;
         std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(sleepTime));
     } else
     {
         LOG_ERROR << "Large frame" << duration << std::endl;
     }
     QueryPerformanceCounter((LARGE_INTEGER*)&m_StartTime);
-    double sleep = ((m_StartTime - currentTime) *1000)/ m_TickPerSecond;
-    LOG_DEBUG << "Time: " << sleep + duration << " Sleep time: " << sleep << std::endl;
+    // double sleep = ((m_StartTime - currentTime) *1000)/ m_TickPerSecond;
+    // LOG_DEBUG << "Time: " << sleep + duration*1000/ m_TickPerSecond << " Sleep time: " << sleep << std::endl;
 }
