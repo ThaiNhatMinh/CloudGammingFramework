@@ -73,7 +73,8 @@
         "stop_token": "cpp",
         "xlocbuf": "cpp",
         "xlocmes": "cpp",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "future": "cpp"
     },
     "cmake.configureOnOpen": true
 }
