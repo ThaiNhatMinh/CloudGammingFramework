@@ -34,10 +34,6 @@ private:
     StreamInformation m_info;
     std::list<Package> m_packages;
     std::list<WsaSocket> m_listenSocket;
-    // std::list<WsaSocket> m_clientSocket;
-    // std::vector<std::unique_ptr<char[]>> m_buffers;
-    // std::vector<std::thread> m_sendThread;
-    // std::vector<uint32_t> m_byteSend;
     StreamPort m_startPort;
     uint32_t m_totalByte;
     uint32_t m_frameCounter;
