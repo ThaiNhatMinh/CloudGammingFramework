@@ -1,13 +1,14 @@
 #pragma once
 #include <string>
+#include <vector>
 
-template<std::size_t length = 1024>
+template<uint32_t length = 1024>
 class BufferStream
 {
 private:
     char m_pBuffer[length];
-    std::size_t m_currentPosition;
-    std::size_t m_length;
+    uint32_t m_currentPosition;
+    uint32_t m_length;
 
 public:
     BufferStream(): m_currentPosition(0), m_length(0) {}
@@ -22,8 +23,18 @@ public:
     template<class type>
     BufferStream& operator<<(const type& out)
     {
-        std::size_t size = sizeof(type);
+        uint32_t size = sizeof(type);
         std::memcpy(&m_pBuffer[m_currentPosition], &out, sizeof(type));
+        m_currentPosition += size;
+        m_length += size;
+        return *this;
+    }
+
+    template<class type>
+    BufferStream& operator<<(const std::vector<type>& out)
+    {
+        uint32_t size = sizeof(type) * static_cast<uint32_t>(out.size());
+        std::memcpy(&m_pBuffer[m_currentPosition], out.data(), size);
         m_currentPosition += size;
         m_length += size;
         return *this;
@@ -38,8 +49,8 @@ public:
             throw std::exception("Not enough buffer for");
         }
         std::memcpy(&m_pBuffer[m_currentPosition], in.data(), in.length());
-        m_currentPosition += in.length();
-        m_length += in.length();
+        m_currentPosition += static_cast<uint32_t>(in.length());
+        m_length += static_cast<uint32_t>(in.length());
         return *this;
     }
 
@@ -52,27 +63,33 @@ public:
         return *this;
     }
 
-    const char* operator[](std::size_t index) const
+    const char* operator[](uint32_t index) const
     {
         return &m_pBuffer[index];
     }
 
-    char* operator[](std::size_t index)
+    char* operator[](uint32_t index)
     {
         return &m_pBuffer[index];
     }
 
-    void SetCurrentPosition(std::size_t pos)
+    void SetCurrentPosition(uint32_t pos)
     {
         m_currentPosition = pos;
     }
 
-    std::size_t GetCurrentPosition()
+    void Reset()
+    {
+        m_currentPosition = 0;
+        m_length = 0;
+    }
+
+    uint32_t GetCurrentPosition()
     {
         return m_currentPosition;
     }
 
-    std::size_t Length()
+    uint32_t Length()
     {
         return m_length;
     }
@@ -87,17 +104,18 @@ public:
         return m_pBuffer;
     }
 
-    void Extract(void* pBuffer, std::size_t extractLength)
+    void Extract(void* pBuffer, uint32_t extractLength)
     {
         std::memcpy(pBuffer, &m_pBuffer[m_currentPosition], extractLength);
         std::memmove(&m_pBuffer[m_currentPosition], &m_pBuffer[m_currentPosition] + extractLength, m_length - m_currentPosition - extractLength);
         m_length -= extractLength;
     }
 
-    constexpr std::size_t Capacity()
+    constexpr uint32_t Capacity()
     {
         return length;
     }
 };
 
 typedef BufferStream<1024> BufferStream1KB;
+typedef BufferStream<10240> BufferStream10KB;
