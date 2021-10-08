@@ -24,7 +24,7 @@ public:
         GameId Id;
         ClientId clientId;
         StreamPort port;
-        std::size_t DisconnectTimeout;
+        uint32_t DisconnectTimeout;
         GameStatus Status;
     } GameRegister;
 

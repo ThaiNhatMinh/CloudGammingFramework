@@ -59,8 +59,8 @@ public:
         buffer->SetCurrentPosition(0);
         if (m_bIsReceivingFrame)
         {
-            std::size_t byteRemain = size - m_currentFrame.length;
-            std::size_t byteToCopy = buffer->Length();
+            uint32_t byteRemain = size - m_currentFrame.length;
+            uint32_t byteToCopy = buffer->Length();
             if (byteToCopy > byteRemain) byteToCopy = byteRemain;
             buffer->Extract(m_currentFrame.data.get() + m_currentFrame.length, byteToCopy);
             LOG_DEBUG << buffer->GetCurrentPosition() << ":" << buffer->Length() << std::endl;

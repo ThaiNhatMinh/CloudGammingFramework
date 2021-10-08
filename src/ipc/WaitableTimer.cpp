@@ -33,7 +33,7 @@ bool WaitableTimer::SetTime(std::size_t timeInMs, std::size_t period) const
     large.QuadPart = timeInMs * 10000;
     large.QuadPart *= -1;
 
-    if (SetWaitableTimer(m_handle.get(), &large, period, nullptr, nullptr, false) == FALSE)
+    if (SetWaitableTimer(m_handle.get(), &large, static_cast<LONG>(period), nullptr, nullptr, false) == FALSE)
     {
         LASTERROR;
         return false;

@@ -33,7 +33,7 @@ void FpsLocker::FrameEnd()
     __int64 duration = currentTime - m_StartTime;
     if (duration < m_frameTime)
     {
-        int sleepTime = (m_frameTime - duration) / m_TickPerSecond * 1000;
+        double sleepTime = (m_frameTime - duration) / m_TickPerSecond * 1000;
         // LOG_DEBUG << "duration time: " << duration << " sleepTime: " << sleepTime << std::endl;
         std::this_thread::sleep_for(std::chrono::duration<double, std::micro>(sleepTime));
     } else

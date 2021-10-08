@@ -46,7 +46,7 @@ public:
      * 
      * @param timeOut In milisecond
      */
-    bool Wait(std::size_t timeOut = INFINITE) const;
+    bool Wait(uint32_t timeOut = INFINITE) const;
 
     HANDLE GetHandle() const { return m_handle.get(); }
 

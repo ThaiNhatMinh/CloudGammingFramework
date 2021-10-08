@@ -50,9 +50,9 @@ bool Event::Signal() const
     return true;
 }
 
-bool Event::Wait(std::size_t timeOut) const
+bool Event::Wait(uint32_t timeOut) const
 {
-    DWORD res = WaitForSingleObject(m_handle.get(), timeOut);
+    DWORD res = WaitForSingleObject(m_handle.get(), static_cast<DWORD>(timeOut));
     if (res == WAIT_OBJECT_0) return true;
     if (res == WAIT_TIMEOUT) return false;
     if (res == WAIT_FAILED)

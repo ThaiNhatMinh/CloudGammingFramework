@@ -6,7 +6,7 @@
 #include "imgui/imgui_impl_opengl3.h"
 #include <chrono>
 
-constexpr std::size_t W = 800, H = 600;
+constexpr std::size_t W = 1920, H = 1080;
 const int PBO_COUNT = 2;
 GLuint pboIds[PBO_COUNT];           // IDs of PBOs
 const int DATA_SIZE = W * H * 4;

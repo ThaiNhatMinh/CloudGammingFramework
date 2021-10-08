@@ -37,6 +37,6 @@ void Frames::PushBack(const char* pData)
 uint32_t Frames::Length()
 {
     if (m_frontPos == m_backPos) return 0;
-    if (m_backPos > m_frontPos) return m_backPos - m_frontPos;
-    if (m_backPos < m_frontPos) return m_frames.size() - (m_frontPos - m_backPos);
+    if (m_backPos > m_frontPos) return static_cast<uint32_t>(m_backPos - m_frontPos);
+    return static_cast<uint32_t>(m_frames.size() - (m_frontPos - m_backPos));
 }
