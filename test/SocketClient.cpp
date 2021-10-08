@@ -41,7 +41,7 @@ int main()
             std::cout << "Error " << i << " " << numSend <<std::endl;
         }
 
-        Sleep(1000/60.0f);
+        Sleep(1000/60);
     }
     
     return 0;

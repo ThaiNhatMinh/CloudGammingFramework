@@ -1,9 +1,11 @@
+#include <chrono>
 #include "common/Message.hh"
 #include "glfw/GlfwWindow.hh"
 #include "ipc/WsaSocket.hh"
 #include "cgf/CloudGammingFrameworkClient.hh"
 #include "common/BufferStream.hh"
 
+int frameIndex;
 int w, h, bpp1;
 std::unique_ptr<char[]> buffer;
 void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
@@ -44,13 +46,12 @@ int main(int argc, char** argv)
     {
         return -1;
     }
-    // Sleep(100);
     if (!cfgClientRequestGame(1))
     {
         return -1;
     }
 
-    Window window(500, 500, "AAA");
+    Window window(200, 200, "AAA");
     window.EnableVsync(true);
     window.SetKeyCallback([](int key, int scancode, int action, int mods)
     {

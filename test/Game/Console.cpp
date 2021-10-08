@@ -34,15 +34,14 @@ int main()
         std::cout << "Register failed\n";
         return -1;
     }
-    cgfSetResolution(w, h);
+    cgfSetResolution(w, h, bpp);
     int i = 0;
-    int fps = 60;
+    int fps = 30;
     DWORD perFrame = 1000/60;
     while(!cgfShouldExit())
     {
         cgfPollEvent();
         cgfSetFrame(buffer);
-        Sleep(perFrame);
     }
     cgfFinalize();
     return 0;

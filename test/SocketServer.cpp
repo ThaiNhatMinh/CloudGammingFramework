@@ -1,17 +1,18 @@
 #include "common/Message.hh"
-#include "ipc/WsaSocket.hh"
 #include "ipc/Event.hh"
+#include "ipc/PollHandle.hh"
+#include "ipc/WsaSocket.hh"
 #include "cgf/cgf.hh"
 #include <iostream>
-#include "Satellite/Frames.hh"
+#include "common/Frames.hh"
 struct Frame
     {
         std::unique_ptr<char[]> data;
-        std::size_t length;
+        uint32_t length;
     };
 
 const std::size_t size = 1920*1080*3;
-class Server : public WsaSocketPollEvent
+class Server
 {
     Event event;
     WsaSocket client;
@@ -20,6 +21,7 @@ class Server : public WsaSocketPollEvent
     bool m_bIsReceivingFrame = false;
     Frame m_currentFrame;
     Frames m_frames;
+    PollHandle64 m_socketPoll;
 
 public:
     Server()
@@ -28,35 +30,40 @@ public:
         {
             throw std::exception();
         }
-        AddEvent(event, static_cast<EventCallback>(&Server::OnExit));
-        AddSocket(sock, nullptr, static_cast<AcceptCallback>(&Server::OnAccept));
+        m_socketPoll.AddEvent(event, std::bind(&Server::OnExit, this, std::placeholders::_1));
+        POLL_ADD_SOCKET_LISTEN(m_socketPoll, sock, &Server::OnClose, &Server::OnAccept);
         m_currentFrame.data.reset(new char[size]);
         m_currentFrame.length = 0;
         m_frames.Init(20, size);
     }
 
-    void OnAccept(WsaSocket&& newSocket)
+    void OnAccept(WsaSocket* newSocket, BufferStream10KB* buffer)
     {
-        client = std::move(newSocket);
-        this->AddSocket(client, static_cast<SocketCallback>(&Server::OnRecv));
+        client = std::move(*newSocket);
+        POLL_ADD_SOCKET_RECV(m_socketPoll, client, &Server::OnClose, &Server::OnRecv);
     }
 
-    bool OnExit(const Event* event)
+    PollAction OnExit(const Event* event)
     {
-        return false;
+        return PollAction::STOP_POLL;
     }
 
-    void OnRecv(WsaSocketInformation* sock)
+    void OnClose(WsaSocket* sock, BufferStream10KB* buffer)
     {
-        if (sock->recvBuffer.Length() < MSG_HEADER_LENGTH) return;
-        sock->recvBuffer.SetCurrentPosition(0);
+        sock->Release();
+    }
+
+    void OnRecv(WsaSocket* sock, BufferStream10KB* buffer)
+    {
+        if (buffer->Length() < MSG_HEADER_LENGTH) return;
+        buffer->SetCurrentPosition(0);
         if (m_bIsReceivingFrame)
         {
             std::size_t byteRemain = size - m_currentFrame.length;
-            std::size_t byteToCopy = sock->recvBuffer.Length();
+            std::size_t byteToCopy = buffer->Length();
             if (byteToCopy > byteRemain) byteToCopy = byteRemain;
-            sock->recvBuffer.Extract(m_currentFrame.data.get() + m_currentFrame.length, byteToCopy);
-            LOG_DEBUG << sock->recvBuffer.GetCurrentPosition() << ":" << sock->recvBuffer.Length() << std::endl;
+            buffer->Extract(m_currentFrame.data.get() + m_currentFrame.length, byteToCopy);
+            LOG_DEBUG << buffer->GetCurrentPosition() << ":" << buffer->Length() << std::endl;
             m_currentFrame.length += byteToCopy;
             if (m_currentFrame.length == size)
             {
@@ -67,12 +74,12 @@ public:
                 m_currentFrame.length = 0;
                 m_bIsReceivingFrame = false;
             }
-            sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
+            buffer->SetCurrentPosition(buffer->Length());
             return;
         }
 
         MessageHeader header;
-        sock->recvBuffer >> header;
+        *buffer >> header;
         if (header.code == Message::MSG_FRAME)
         {
             m_bIsReceivingFrame = true;
@@ -81,10 +88,10 @@ public:
             LOG_DEBUG << "Unknow code " << header.code << std::endl;
             exit(-1);
         }
-        sock->recvBuffer.SetCurrentPosition(sock->recvBuffer.Length());
+        buffer->SetCurrentPosition(buffer->Length());
     }
 
-    void OnSend(WsaSocketInformation* sock)
+    void OnSend(WsaSocket* sock, BufferStream10KB* buffer)
     {
         
         // sock->sendBuffer << msg;
@@ -95,6 +102,11 @@ public:
         // }
     }
 
+    void Poll()
+    {
+        m_socketPoll.PollSocket(INFINITE);
+    }
+
 };
 
 int main()
@@ -103,6 +115,6 @@ int main()
     
     Server server;
     std::cout << "Start\n";
-    server.PollEvent();
+    server.Poll();
     return 0;
 }

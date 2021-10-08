@@ -21,7 +21,7 @@ int main()
     games.push_back(imgui);
     Sun sun(&config, games);
     
-    sun.PollEvent();
+    sun.Start();
 
     return 0;
 }

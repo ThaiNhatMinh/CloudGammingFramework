@@ -7,10 +7,9 @@
 #include <chrono>
 
 constexpr std::size_t W = 800, H = 600;
-char buffer[W* H * 3];
 const int PBO_COUNT = 2;
 GLuint pboIds[PBO_COUNT];           // IDs of PBOs
-const int DATA_SIZE = W * H * 3;
+const int DATA_SIZE = W * H * 4;
 void createfpo();
 int main()
 {
@@ -40,7 +39,7 @@ int main()
         std::cout << "Register failed\n";
         return -1;
     }
-    cgfSetResolution(W, H);
+    cgfSetResolution(W, H, 4);
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -59,6 +58,7 @@ int main()
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     double imguiTime = 0;
     double sendFrameTime = 0;
+    uint32_t frameCount = 0;
     while (!cgfShouldExit())
     {
         window.HandleEvent();
@@ -73,25 +73,19 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         {
-            static float f = 0.0f;
-            static int counter = 0;
-
             ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_AlwaysAutoResize);                          // Create a window called "Hello, world!" and append into it.
 
             ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
             ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
             ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
+            ImGui::Text("Frame counter = %d", ++frameCount);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::Text("cgfPollEvent: %.3f imgui: %.3f glMapBuffer: %.10f", pollTime, imguiTime, sendFrameTime);
+            ImGui::Text("cgfPollEvent: %.3f imgui: %.3f sendFrameTime: %.10f", pollTime, imguiTime, sendFrameTime);
             ImGui::End();
         }
         ImGui::Render();
@@ -111,13 +105,10 @@ int main()
 
         glReadBuffer(GL_FRONT);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[index]);
-        glReadPixels(0, 0, W, H, GL_RGB, GL_UNSIGNED_BYTE, 0);
+        glReadPixels(0, 0, W, H, GL_BGRA, GL_UNSIGNED_BYTE , 0);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[nextIndex]);
         GLubyte* src = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-        
-        end = std::chrono::high_resolution_clock::now();
-        elapsed = end-start;
-        sendFrameTime = elapsed.count();
+
         if(src)
         {
             cgfSetFrame(src);
@@ -125,7 +116,13 @@ int main()
         } else {
             LOG_ERROR << "NULL\n";
         }
+
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = end-start;
+        sendFrameTime = elapsed.count();
+
         window.SwapBuffer();
     }
     cgfFinalize();
