@@ -1,6 +1,6 @@
 [submodule "3pp/glfw"]
 	path = 3pp/glfw
 	url = https://github.com/glfw/glfw.git
-[submodule ".\\3pp\\imgui"]
-	path = .\\3pp\\imgui
+[submodule "3pp/imgui"]
+	path = 3pp/imgui
 	url = https://github.com/ocornut/imgui.git
