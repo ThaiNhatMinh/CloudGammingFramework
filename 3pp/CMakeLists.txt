@@ -6,3 +6,5 @@ set(USE_MSVC_RUNTIME_LIBRARY_DLL OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(imgui)
 add_subdirectory(glad)
+add_subdirectory(glfw)
+
