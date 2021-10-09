@@ -124,7 +124,14 @@ void StreamController::InternalThread()
 void StreamController::StopPoll()
 {
     m_stopPollEvent.Signal();
-    if (m_pollThread.joinable()) m_pollThread.join();
+    // FIXME: Somehow thread is finsh but .join() not return, use detach is a workaround
+    m_pollThread.detach();
+    for (auto iter = m_packages.begin(); iter != m_packages.end(); iter++)
+    {
+        m_stopPollEvent.Signal();
+        // FIXME: Somehow thread is finsh but .join() not return, use detach is a workaround
+        iter->thread.detach();
+    }
 }
 
 void StreamController::SetFrame(const void* pData)
