@@ -8,10 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:msvcrtd.lib ")
 include_directories(3pp)
 include_directories(3pp/glfw/include)
+include_directories(3pp/imgui)
 include_directories(3pp/glad/include)
 include_directories(src)
-
-find_library(DETOURS_LIB detours HINTS "./Lib")
 
 add_compile_definitions(LOG_STD)
 

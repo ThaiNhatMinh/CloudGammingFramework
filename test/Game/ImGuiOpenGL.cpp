@@ -2,8 +2,8 @@
 #include "cgf/CloudGammingFramework.hh"
 #include "common/Logger.hh"
 #include "glfw/GlfwWindow.hh"
-#include "imgui/imgui_impl_glfw.h"
-#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
 #include <chrono>
 
 constexpr std::size_t W = 800, H = 600;
