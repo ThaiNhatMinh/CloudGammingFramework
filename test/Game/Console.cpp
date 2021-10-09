@@ -26,7 +26,7 @@ int main()
 
     InputCallback callback;
     callback.CursorPositionCallback = [](double xpos, double ypos) {};
-    callback.MouseButtonCallback = [](Action action, int key) {};
+    callback.MouseButtonCallback = [](Action action, MouseButton key) {};
     callback.KeyPressCallback = input;
     bool res = cgfRegisterGame("Test console", GraphicApi::DIRECTX_9, callback);
     if (!res)

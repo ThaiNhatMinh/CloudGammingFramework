@@ -139,6 +139,13 @@ enum Key
     KEY_MENU = 348,
 };
 
+enum MouseButton
+{
+    LEFT,
+    MIDDLE,
+    RIGHT
+};
+
 enum Action
 {
     PRESS,
@@ -169,7 +176,7 @@ struct InputEvent
     struct MouseActionEvent
     {
         Action action;
-        int key;
+        MouseButton key;
     };
 
     EventType type;

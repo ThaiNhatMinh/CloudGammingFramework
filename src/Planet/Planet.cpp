@@ -34,7 +34,6 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
 
 void Planet::PollEvent()
 {
-    m_fpsLocker.FrameStart();
     if (m_inputEvents.empty()) return;
 
     InputEvent event = m_inputEvents.front();

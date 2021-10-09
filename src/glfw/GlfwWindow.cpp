@@ -69,7 +69,7 @@ void Window::OnMouse(int button, int action, int mods)
 
 void Window::OnMouseMove(double xpos, double ypos)
 {
-    m_mouseMoveCallback(xpos, ypos);
+    m_mouseMoveCallback(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
 void Window::FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -162,4 +162,12 @@ void Window::SetMouseCallback(std::function<void(int, int, int)> callback)
 void Window::SetMouseMoveCallback(std::function<void(float, float)> callback)
 {
     m_mouseMoveCallback = callback;
+}
+
+void Window::GetFramebufferSize(uint32_t* width, uint32_t* height)
+{
+    int w,h;
+    glfwGetFramebufferSize(m_pWindow, &w, &h);
+    *width = w;
+    *height = h;
 }

@@ -40,8 +40,13 @@ int main(int argc, char** argv)
             event.key.action = Action::PRESS;
         else if (action == GLFW_RELEASE)
             event.key.action = Action::RELEASE;
-        else
+        else if (action == GLFW_REPEAT)
             event.key.action = Action::PRESSING;
+        else
+        {
+            std::cout << "Unknow action: " << action;
+            throw std::exception("Unknow action");
+        }
         // std::cout << "Scancode: " << scancode << " mods: " << mods << std::endl;
         std::cout << "Action: " << event.key.action << " Key: " << event.key.key << std::endl;
         if (!cgfClientSendEvent(event))
@@ -57,7 +62,34 @@ int main(int argc, char** argv)
         event.mousePos.y = ypos;
         if (!cgfClientSendEvent(event))
         {
-            std::cout << "ERROR\n";
+            std::cout << "ERROR send event\n";
+        }
+    });
+    window->SetMouseCallback([](int button, int action, int mods)
+    {
+        InputEvent event;
+        event.type = InputEvent::EventType::MOUSE_ACTION;
+        if (action == GLFW_PRESS) event.mouseAction.action = Action::PRESS;
+        else if (action == GLFW_RELEASE) event.mouseAction.action = Action::RELEASE;
+        else
+        {
+            std::cout << "Unknow action: " << action;
+            throw std::exception("Unknow action");
+        }
+        if (button == GLFW_MOUSE_BUTTON_LEFT)
+            event.mouseAction.key = MouseButton::LEFT;
+        else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+            event.mouseAction.key = MouseButton::RIGHT;
+        else if (button == GLFW_MOUSE_BUTTON_MIDDLE)
+            event.mouseAction.key = MouseButton::MIDDLE;
+        else 
+        {
+            std::cout << "Unknow button: " << button;
+            throw std::exception("Unknow button");
+        }
+        if (!cgfClientSendEvent(event))
+        {
+            std::cout << "ERROR send SetMouseCallback event\n";
         }
     });
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {

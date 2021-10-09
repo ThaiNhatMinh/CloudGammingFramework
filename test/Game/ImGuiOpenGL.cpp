@@ -11,6 +11,8 @@ const int PBO_COUNT = 2;
 GLuint pboIds[PBO_COUNT];           // IDs of PBOs
 const int DATA_SIZE = W * H * 4;
 void createfpo();
+void ImGui_ImplGlfw_NewFrame(Window * pWindow);
+
 int main()
 {
     Window window(W, H, "Server game");
@@ -29,7 +31,14 @@ int main()
         ImGuiIO& io = ImGui::GetIO();
         io.MousePos = ImVec2((float)xpos, (float)ypos);
     };
-    callback.MouseButtonCallback = [](Action action, int key) {};
+    callback.MouseButtonCallback = [](Action action, MouseButton key)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        bool down = action == Action::PRESS;
+        if (key == MouseButton::LEFT) io.MouseDown[0] = down;
+        else if (key == MouseButton::RIGHT) io.MouseDown[1] = down;
+        else if (key == MouseButton::MIDDLE) io.MouseDown[2] = down;
+    };
     callback.KeyPressCallback = [](Action action, Key key)
     {
         std::cout << "Action: " << action << " Key: " << key << std::endl;
@@ -70,7 +79,7 @@ int main()
 
         start = std::chrono::high_resolution_clock::now();
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
+        ImGui_ImplGlfw_NewFrame(&window);
         ImGui::NewFrame();
         {
             ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_AlwaysAutoResize);                          // Create a window called "Hello, world!" and append into it.
@@ -140,4 +149,30 @@ void createfpo()
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
     glBufferData(GL_PIXEL_PACK_BUFFER, DATA_SIZE, 0, GL_STREAM_READ);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+}
+
+void ImGui_ImplGlfw_NewFrame(Window *pWindow)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    static double lasTime = 0;
+    // Setup display size (every frame to accommodate for window resizing)
+    uint32_t w, h;
+    uint32_t display_w, display_h;
+    pWindow->GetSize(&w, &h);
+    pWindow->GetFramebufferSize(&display_w, &display_h);
+    io.DisplaySize = ImVec2((float)w, (float)h);
+    if (w > 0 && h > 0)
+        io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
+
+    // Setup time step
+    double current_time = glfwGetTime();
+    io.DeltaTime = lasTime > 0.0 ? (float)(current_time - lasTime) : (float)(1.0f / 60.0f);
+    lasTime = current_time;
+
+    // Update mouse buttons
+    // (if a mouse press event came, always pass it as "mouse held this frame", so we don't miss click-release events that are shorter than 1 frame)
+//     for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
+//     {
+//         io.MouseDown[i] = cgfGetKeyStatus != 0;
+//     }
 }

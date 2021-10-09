@@ -35,6 +35,7 @@ public:
     void Resize(uint32_t width, uint32_t height);
     void SetName(const std::string& name);
     void GetSize(uint32_t* width, uint32_t* height);
+    void GetFramebufferSize(uint32_t* width, uint32_t* height);
     void MakeContext();
     GLFWwindow* GetGlfw();
     void SetWinMoveCallback(std::function<void(int, int)> callback);

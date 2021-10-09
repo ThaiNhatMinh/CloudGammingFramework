@@ -12,7 +12,7 @@ enum GraphicApi
 };
 
 typedef void (*cgfCursorposfun)(double xpos, double ypos);
-typedef void (*cgfMousebuttonfun)(Action action, int key);
+typedef void (*cgfMousebuttonfun)(Action action, MouseButton key);
 typedef void (*cgfKeyPressfun)(Action action, Key key);
 
 typedef struct
