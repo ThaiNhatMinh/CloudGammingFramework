@@ -50,6 +50,9 @@ void Planet::PollEvent()
     case InputEvent::EventType::MOUSE_ACTION:
         m_inputHandler.MouseButtonCallback(event.mouseAction.action, event.mouseAction.key);
         break;
+    case InputEvent::EventType::TEXT_INPUT:
+        m_inputHandler.TextInputCallback(event.text.type, event.text.character);
+        break;
     default:
         break;
     }

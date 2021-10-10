@@ -159,8 +159,17 @@ struct InputEvent
     {
         KEY,
         MOUSE_MOVE,
-        MOUSE_ACTION
+        MOUSE_ACTION,
+        TEXT_INPUT
     };
+
+    enum CharType
+    {
+        ASCII,
+        UTF8,
+        UTF16
+    };
+
     struct KeyEvent
     {
        Action action;
@@ -179,12 +188,19 @@ struct InputEvent
         MouseButton key;
     };
 
+    struct TextInput
+    {
+        CharType type;
+        unsigned int character;
+    };
+
     EventType type;
     union
     {
         KeyEvent key;
         MousePosEvent mousePos;
         MouseActionEvent mouseAction;
+        TextInput text;
     };
 };
 
