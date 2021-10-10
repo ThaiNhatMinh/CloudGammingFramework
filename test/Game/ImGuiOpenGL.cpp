@@ -28,6 +28,16 @@ int main()
     }
     createfpo();
     InputCallback callback;
+    callback.TextInputCallback = [](InputEvent::CharType type, unsigned int ch)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (type == InputEvent::CharType::ASCII)
+            io.AddInputCharacter(ch);
+        // else if (type == InputEvent::CharType::UTF8)
+        //     io.AddInputCharactersUTF8(static_cast<const char*>(&ch));
+        else if (type == InputEvent::CharType::UTF16)
+            io.AddInputCharacterUTF16(ch);
+    };
     callback.CursorPositionCallback = [](double xpos, double ypos) {
         ImGuiIO& io = ImGui::GetIO();
         io.MousePos = ImVec2((float)xpos, (float)ypos);

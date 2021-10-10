@@ -31,6 +31,17 @@ int main(int argc, char** argv)
 {
     window = new Window(500, 500, "Client game");
     window->EnableVsync(true);
+    window->SetInputTextCallback([](unsigned int c)
+    {
+        InputEvent event;
+        event.type = InputEvent::EventType::TEXT_INPUT;
+        event.text.type = InputEvent::CharType::ASCII;
+        event.text.character = c;
+        if (!cgfClientSendEvent(event))
+        {
+            std::cout << "ERROR\n";
+        }
+    });
     window->SetKeyCallback([](int key, int scancode, int action, int mods)
     {
         InputEvent event;
