@@ -1,7 +1,7 @@
 #pragma once
 #include <functional>
 #include <string>
-
+#include "Win32.hh"
 #include "GLFW/glfw3.h"
 
 class Window

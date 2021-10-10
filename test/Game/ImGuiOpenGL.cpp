@@ -12,7 +12,7 @@ GLuint pboIds[PBO_COUNT];           // IDs of PBOs
 const int DATA_SIZE = W * H * 4;
 void createfpo();
 void ImGui_ImplGlfw_NewFrame(Window * pWindow);
-void ImgGui_InitForCloud();
+void ImgGui_InitForCloud(Window * pWindow);
 
 int main()
 {
@@ -88,7 +88,7 @@ int main()
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
-    ImgGui_InitForCloud();
+    ImgGui_InitForCloud(&window);
     ImGui_ImplOpenGL3_Init();
     bool show_demo_window = false, show_another_window;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);

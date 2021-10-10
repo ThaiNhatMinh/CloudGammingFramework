@@ -1,5 +1,6 @@
 #include "GlfwWindow.hh"
 #include "common/Logger.hh"
+#define GLFW_EXPOSE_NATIVE_WIN32
 #include "GLFW/glfw3native.h"
 
 void glfwErrorCallback(int error_code,const char* des)
