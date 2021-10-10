@@ -13,7 +13,6 @@ Window::Window()
 
 Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width(width), m_height(height), m_name(name)
 {
-    TRACE;
     m_bIsWindowResize = false;
     glfwInit();
     glfwSetErrorCallback(&glfwErrorCallback);
@@ -29,10 +28,9 @@ Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width
     glfwSetKeyCallback(m_pWindow, KeyCallback);
     glfwSetMouseButtonCallback(m_pWindow, MouseCallback);
     glfwSetCursorPosCallback(m_pWindow, CursorPosCallback);
+    glfwSetCharCallback(m_pWindow, CharCallback);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    int display_w, display_h;
-    glfwGetFramebufferSize(m_pWindow, &display_w, &display_h);
     m_mouseMoveCallback = [](double, double){};
 }
 
@@ -60,6 +58,11 @@ void Window::OnMove(int x, int y)
 void Window::OnKey(int key, int scancode, int action, int mods)
 {
     if (m_keyCallback) m_keyCallback(key, scancode, action, mods);
+}
+
+void Window::OnChar(unsigned int c)
+{
+    if (m_charCallback) m_charCallback(c);
 }
 
 void Window::OnMouse(int button, int action, int mods)
@@ -98,6 +101,12 @@ void Window::CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
     static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
     pWindow->OnMouseMove(xpos, ypos);
+}
+
+void Window::CharCallback(GLFWwindow* window, unsigned int c)
+{
+    static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    pWindow->OnChar(c);
 }
 
 void Window::HandleEvent()
@@ -162,6 +171,11 @@ void Window::SetMouseCallback(std::function<void(int, int, int)> callback)
 void Window::SetMouseMoveCallback(std::function<void(float, float)> callback)
 {
     m_mouseMoveCallback = callback;
+}
+
+void Window::SetInputTextCallback(std::function<void(unsigned int)> callback)
+{
+    m_charCallback = callback;
 }
 
 void Window::GetFramebufferSize(uint32_t* width, uint32_t* height)
