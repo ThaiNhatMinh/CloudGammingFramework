@@ -12,6 +12,7 @@ GLuint pboIds[PBO_COUNT];           // IDs of PBOs
 const int DATA_SIZE = W * H * 4;
 void createfpo();
 void ImGui_ImplGlfw_NewFrame(Window * pWindow);
+void InitKeyMap();
 
 int main()
 {
@@ -42,6 +43,11 @@ int main()
     callback.KeyPressCallback = [](Action action, Key key)
     {
         std::cout << "Action: " << action << " Key: " << key << std::endl;
+        ImGuiIO& io = ImGui::GetIO();
+        if (action == Action::PRESS)
+            io.KeysDown[key] = true;
+        if (action == Action::RELEASE)
+            io.KeysDown[key] = false;
     };
     if (!cgfRegisterGame("Test console", GraphicApi::OPENGL, callback))
     {
@@ -62,12 +68,14 @@ int main()
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window.GetGlfw(), false);
+    InitKeyMap();
     ImGui_ImplOpenGL3_Init();
-    bool show_demo_window, show_another_window;
+    bool show_demo_window = false, show_another_window;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
     double imguiTime = 0;
     double sendFrameTime = 0;
     uint32_t frameCount = 0;
+    char buffer[512] = {0};
     while (!cgfShouldExit())
     {
         window.HandleEvent();
@@ -81,6 +89,8 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame(&window);
         ImGui::NewFrame();
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
         {
             ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_AlwaysAutoResize);                          // Create a window called "Hello, world!" and append into it.
 
@@ -92,6 +102,7 @@ int main()
 
             ImGui::SameLine();
             ImGui::Text("Frame counter = %d", ++frameCount);
+            ImGui::InputText("Type something:", buffer, 512);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::Text("cgfPollEvent: %.3f imgui: %.3f sendFrameTime: %.10f", pollTime, imguiTime, sendFrameTime);
@@ -175,4 +186,32 @@ void ImGui_ImplGlfw_NewFrame(Window *pWindow)
 //     {
 //         io.MouseDown[i] = cgfGetKeyStatus != 0;
 //     }
+}
+
+void InitKeyMap()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array.
+    io.KeyMap[ImGuiKey_Tab] = Key::KEY_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = Key::KEY_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = Key::KEY_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = Key::KEY_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = Key::KEY_DOWN;
+    io.KeyMap[ImGuiKey_PageUp] = Key::KEY_PAGE_UP;
+    io.KeyMap[ImGuiKey_PageDown] = Key::KEY_PAGE_DOWN;
+    io.KeyMap[ImGuiKey_Home] = Key::KEY_HOME;
+    io.KeyMap[ImGuiKey_End] = Key::KEY_END;
+    io.KeyMap[ImGuiKey_Insert] = Key::KEY_INSERT;
+    io.KeyMap[ImGuiKey_Delete] = Key::KEY_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = Key::KEY_BACKSPACE;
+    io.KeyMap[ImGuiKey_Space] = Key::KEY_SPACE;
+    io.KeyMap[ImGuiKey_Enter] = Key::KEY_ENTER;
+    io.KeyMap[ImGuiKey_Escape] = Key::KEY_ESCAPE;
+    // io.KeyMap[ImGuiKey_KeyPadEnter] = Key::P;
+    io.KeyMap[ImGuiKey_A] = Key::KEY_A;
+    io.KeyMap[ImGuiKey_C] = Key::KEY_C;
+    io.KeyMap[ImGuiKey_V] = Key::KEY_V;
+    io.KeyMap[ImGuiKey_X] = Key::KEY_X;
+    io.KeyMap[ImGuiKey_Y] = Key::KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = Key::KEY_Z;
 }
