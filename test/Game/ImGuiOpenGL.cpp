@@ -12,7 +12,7 @@ GLuint pboIds[PBO_COUNT];           // IDs of PBOs
 const int DATA_SIZE = W * H * 4;
 void createfpo();
 void ImGui_ImplGlfw_NewFrame(Window * pWindow);
-void InitKeyMap();
+void ImgGui_InitForCloud();
 
 int main()
 {
@@ -42,6 +42,12 @@ int main()
         ImGuiIO& io = ImGui::GetIO();
         io.MousePos = ImVec2((float)xpos, (float)ypos);
     };
+    callback.ScrollCallback = [](double xoffset, double yoffset)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        io.MouseWheelH += (float)xoffset;
+        io.MouseWheel += (float)yoffset;
+    };
     callback.MouseButtonCallback = [](Action action, MouseButton key)
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -58,6 +64,11 @@ int main()
             io.KeysDown[key] = true;
         if (action == Action::RELEASE)
             io.KeysDown[key] = false;
+        // Modifiers are not reliable across systems
+        io.KeyCtrl = io.KeysDown[Key::KEY_LEFT_CONTROL] || io.KeysDown[Key::KEY_RIGHT_CONTROL];
+        io.KeyShift = io.KeysDown[Key::KEY_LEFT_SHIFT] || io.KeysDown[Key::KEY_RIGHT_SHIFT];
+        io.KeyAlt = io.KeysDown[Key::KEY_LEFT_ALT] || io.KeysDown[Key::KEY_RIGHT_ALT];
+        io.KeySuper = false;
     };
     if (!cgfRegisterGame("Test console", GraphicApi::OPENGL, callback))
     {
@@ -77,8 +88,7 @@ int main()
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window.GetGlfw(), false);
-    InitKeyMap();
+    ImgGui_InitForCloud();
     ImGui_ImplOpenGL3_Init();
     bool show_demo_window = false, show_another_window;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -198,9 +208,11 @@ void ImGui_ImplGlfw_NewFrame(Window *pWindow)
 //     }
 }
 
-void InitKeyMap()
+void ImgGui_InitForCloud(Window* win)
 {
     ImGuiIO& io = ImGui::GetIO();
+    io.BackendPlatformName = "imgui_impl_cloud";
+    io.ImeWindowHandle = win->GetNativeHandle();
     // Keyboard mapping. Dear ImGui will use those indices to peek into the io.KeysDown[] array.
     io.KeyMap[ImGuiKey_Tab] = Key::KEY_TAB;
     io.KeyMap[ImGuiKey_LeftArrow] = Key::KEY_LEFT;

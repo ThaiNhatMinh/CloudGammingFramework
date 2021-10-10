@@ -42,6 +42,17 @@ int main(int argc, char** argv)
             std::cout << "ERROR\n";
         }
     });
+    window->SetScrollCallback([](double xoffset, double yoffset)
+    {
+        InputEvent event;
+        event.type = InputEvent::EventType::SCROLL;
+        event.scroll.xoffset = xoffset;
+        event.scroll.yoffset = yoffset;
+        if (!cgfClientSendEvent(event))
+        {
+            std::cout << "ERROR\n";
+        }
+    });
     window->SetKeyCallback([](int key, int scancode, int action, int mods)
     {
         InputEvent event;
