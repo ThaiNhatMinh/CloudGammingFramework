@@ -38,6 +38,7 @@ void Planet::PollEvent()
 
     InputEvent event = m_inputEvents.front();
     m_inputEvents.pop();
+    // TODO: Convert to map<EventType, callback>
     switch (event.type)
     {
     case InputEvent::EventType::KEY:
@@ -52,6 +53,9 @@ void Planet::PollEvent()
         break;
     case InputEvent::EventType::TEXT_INPUT:
         m_inputHandler.TextInputCallback(event.text.type, event.text.character);
+        break;
+    case InputEvent::EventType::SCROLL:
+        m_inputHandler.ScrollCallback(event.scroll.xoffset, event.scroll.yoffset);
         break;
     default:
         break;

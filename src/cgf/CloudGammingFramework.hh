@@ -15,6 +15,7 @@ typedef void (*cgfCursorposfun)(double xpos, double ypos);
 typedef void (*cgfMousebuttonfun)(Action action, MouseButton key);
 typedef void (*cgfKeyPressfun)(Action action, Key key);
 typedef void (*cgfCharfun)(InputEvent::CharType type, unsigned int ch);
+typedef void (*cgfSCrollfun)(double xoffset, double yoffset);
 
 typedef struct
 {
@@ -22,6 +23,7 @@ typedef struct
     cgfMousebuttonfun MouseButtonCallback;
     cgfKeyPressfun KeyPressCallback;
     cgfCharfun TextInputCallback;
+    cgfSCrollfun ScrollCallback;
 } InputCallback;
 
 bool cgfRegisterGame(const char *gameName, GraphicApi type, InputCallback callback);

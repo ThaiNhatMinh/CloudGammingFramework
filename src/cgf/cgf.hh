@@ -160,7 +160,8 @@ struct InputEvent
         KEY,
         MOUSE_MOVE,
         MOUSE_ACTION,
-        TEXT_INPUT
+        TEXT_INPUT,
+        SCROLL
     };
 
     enum CharType
@@ -194,6 +195,12 @@ struct InputEvent
         unsigned int character;
     };
 
+    struct Scroll
+    {
+        double xoffset;
+        double yoffset;
+    };
+
     EventType type;
     union
     {
@@ -201,6 +208,7 @@ struct InputEvent
         MousePosEvent mousePos;
         MouseActionEvent mouseAction;
         TextInput text;
+        Scroll scroll;
     };
 };
 
