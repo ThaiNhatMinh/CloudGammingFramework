@@ -1,5 +1,6 @@
 #include "GlfwWindow.hh"
 #include "common/Logger.hh"
+#include "GLFW/glfw3native.h"
 
 void glfwErrorCallback(int error_code,const char* des)
 {
@@ -28,6 +29,7 @@ Window::Window(uint32_t width, uint32_t height, const std::string& name):m_width
     glfwSetKeyCallback(m_pWindow, KeyCallback);
     glfwSetMouseButtonCallback(m_pWindow, MouseCallback);
     glfwSetCursorPosCallback(m_pWindow, CursorPosCallback);
+    glfwSetScrollCallback(m_pWindow, ScrollCallback);
     glfwSetCharCallback(m_pWindow, CharCallback);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -75,6 +77,12 @@ void Window::OnMouseMove(double xpos, double ypos)
     m_mouseMoveCallback(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
+void Window::OnScroll(double xoffset, double yoffset)
+{
+    if (m_scrollCallback)
+        m_scrollCallback(xoffset, yoffset);
+}
+
 void Window::FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
     static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
     pWindow->OnResize(width, height);
@@ -101,6 +109,12 @@ void Window::CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
     static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
     pWindow->OnMouseMove(xpos, ypos);
+}
+
+void Window::ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    static Window* pWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    pWindow->OnScroll(xoffset, yoffset);
 }
 
 void Window::CharCallback(GLFWwindow* window, unsigned int c)
@@ -143,6 +157,11 @@ GLFWwindow* Window::GetGlfw()
     return m_pWindow;
 }
 
+void* Window::GetNativeHandle()
+{
+    return glfwGetWin32Window(m_pWindow);
+}
+
 void Window::SwapBuffer()
 {
     glfwSwapBuffers(m_pWindow);
@@ -176,6 +195,11 @@ void Window::SetMouseMoveCallback(std::function<void(float, float)> callback)
 void Window::SetInputTextCallback(std::function<void(unsigned int)> callback)
 {
     m_charCallback = callback;
+}
+
+void Window::SetScrollCallback(std::function<void(double, double)> callback)
+{
+    m_scrollCallback = callback;
 }
 
 void Window::GetFramebufferSize(uint32_t* width, uint32_t* height)
