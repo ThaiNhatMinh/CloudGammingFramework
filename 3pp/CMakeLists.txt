@@ -11,3 +11,8 @@ file(GLOB IMGUI_SOURCES "imgui/*.cpp" "imgui/backends/imgui_impl_glfw.cpp" "imgu
 
 include_directories(imgui)
 add_library(imgui STATIC ${IMGUI_SOURCES})
+
+include_directories(imgui/backends)
+find_package(OpenGL REQUIRED)
+add_executable(imgui_example "imgui/examples/example_glfw_opengl3/main.cpp")
+target_link_libraries(imgui_example glfw imgui ${OPENGL_LIBRARIES})
