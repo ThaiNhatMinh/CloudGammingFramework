@@ -56,6 +56,10 @@ public:
     bool RequestGame(GameId id);
     bool SendInput(InputEvent event);
     void Finalize();
+
+    /**
+     * Dispatch MSG_RESOULUTION and MSG_FRAME event
+     */
     bool PollEvent(std::size_t timeout);
     bool CloseGame();
 

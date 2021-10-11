@@ -11,6 +11,12 @@ enum GraphicApi
     VULKAN,
 };
 
+enum DispatchType
+{
+    ONE,
+    ALL
+};
+
 typedef void (*cgfCursorposfun)(double xpos, double ypos);
 typedef void (*cgfMousebuttonfun)(Action action, MouseButton key);
 typedef void (*cgfKeyPressfun)(Action action, Key key);
@@ -27,7 +33,7 @@ typedef struct
 } InputCallback;
 
 bool cgfRegisterGame(const char *gameName, GraphicApi type, InputCallback callback);
-void cgfPollEvent();
+void cgfPollEvent(DispatchType type);
 
 /**
  * Get status of key

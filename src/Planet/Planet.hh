@@ -58,7 +58,7 @@ public:
     /**
      * Trigger all event in queue
      */
-    void PollEvent();
+    void PollEvent(DispatchType type);
 
     int GetKeyStatus(Key key);
 

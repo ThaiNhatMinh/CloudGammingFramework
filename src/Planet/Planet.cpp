@@ -32,34 +32,39 @@ bool Planet::Init(const char* game, GraphicApi type, InputCallback handler)
     return true; 
 }
 
-void Planet::PollEvent()
+void Planet::PollEvent(DispatchType type)
 {
     if (m_inputEvents.empty()) return;
 
-    InputEvent event = m_inputEvents.front();
-    m_inputEvents.pop();
-    // TODO: Convert to map<EventType, callback>
-    switch (event.type)
+    do
     {
-    case InputEvent::EventType::KEY:
-        m_KeyStatus[event.key.key] = event.key.action;
-        m_inputHandler.KeyPressCallback(event.key.action, event.key.key);
-        break;
-    case InputEvent::EventType::MOUSE_MOVE:
-        m_inputHandler.CursorPositionCallback(event.mousePos.x, event.mousePos.y);
-        break;
-    case InputEvent::EventType::MOUSE_ACTION:
-        m_inputHandler.MouseButtonCallback(event.mouseAction.action, event.mouseAction.key);
-        break;
-    case InputEvent::EventType::TEXT_INPUT:
-        m_inputHandler.TextInputCallback(event.text.type, event.text.character);
-        break;
-    case InputEvent::EventType::SCROLL:
-        m_inputHandler.ScrollCallback(event.scroll.xoffset, event.scroll.yoffset);
-        break;
-    default:
-        break;
-    }
+        InputEvent event = m_inputEvents.front();
+        m_inputEvents.pop();
+        // TODO: Convert to map<EventType, callback>
+        switch (event.type)
+        {
+        case InputEvent::EventType::KEY:
+            m_KeyStatus[event.key.key] = event.key.action;
+            m_inputHandler.KeyPressCallback(event.key.action, event.key.key);
+            break;
+        case InputEvent::EventType::MOUSE_MOVE:
+            m_inputHandler.CursorPositionCallback(event.mousePos.x, event.mousePos.y);
+            break;
+        case InputEvent::EventType::MOUSE_ACTION:
+            m_inputHandler.MouseButtonCallback(event.mouseAction.action, event.mouseAction.key);
+            break;
+        case InputEvent::EventType::TEXT_INPUT:
+            m_inputHandler.TextInputCallback(event.text.type, event.text.character);
+            break;
+        case InputEvent::EventType::SCROLL:
+            m_inputHandler.ScrollCallback(event.scroll.xoffset, event.scroll.yoffset);
+            break;
+        default:
+            break;
+        }
+
+        if (type == DispatchType::ONE) break;
+    } while (!m_inputEvents.empty());
 }
 
 void Planet::InternalThread()

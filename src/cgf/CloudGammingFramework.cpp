@@ -13,9 +13,9 @@ bool cgfRegisterGame(const char* gameName, GraphicApi type, InputCallback handle
     return myPlanet.Init(gameName, type, handler);
 }
 
-void cgfPollEvent()
+void cgfPollEvent(DispatchType type)
 {
-    myPlanet.PollEvent();
+    myPlanet.PollEvent(type);
 }
 
 int cgfGetKeyStatus(Key key)

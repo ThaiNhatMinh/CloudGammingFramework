@@ -100,7 +100,7 @@ int main()
     {
         window.HandleEvent();
         auto start = std::chrono::high_resolution_clock::now();
-        cgfPollEvent();
+        cgfPollEvent(DispatchType::ALL);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> elapsed = end-start;
         double pollTime = elapsed.count();
@@ -229,7 +229,7 @@ void ImgGui_InitForCloud(Window* win)
     io.KeyMap[ImGuiKey_Space] = Key::KEY_SPACE;
     io.KeyMap[ImGuiKey_Enter] = Key::KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = Key::KEY_ESCAPE;
-    // io.KeyMap[ImGuiKey_KeyPadEnter] = Key::P;
+    io.KeyMap[ImGuiKey_KeyPadEnter] = Key::KEY_NUM_LOCK;
     io.KeyMap[ImGuiKey_A] = Key::KEY_A;
     io.KeyMap[ImGuiKey_C] = Key::KEY_C;
     io.KeyMap[ImGuiKey_V] = Key::KEY_V;

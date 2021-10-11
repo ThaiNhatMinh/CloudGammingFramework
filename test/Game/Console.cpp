@@ -40,7 +40,7 @@ int main()
     DWORD perFrame = 1000/60;
     while(!cgfShouldExit())
     {
-        cgfPollEvent();
+        cgfPollEvent(DispatchType::ALL);
         cgfSetFrame(buffer);
     }
     cgfFinalize();
