@@ -14,6 +14,8 @@ void createfpo();
 void ImGui_ImplGlfw_NewFrame(Window * pWindow);
 void ImgGui_InitForCloud(Window * pWindow);
 
+#define REMOTE_INPUT
+// #undef REMOTE_INPUT
 int main()
 {
     Window window(W, H, "Server game");
@@ -28,6 +30,8 @@ int main()
     }
     createfpo();
     InputCallback callback;
+    std::memset(&callback, 0, sizeof(callback));
+#if defined(REMOTE_INPUT)
     callback.TextInputCallback = [](InputEvent::CharType type, unsigned int ch)
     {
         ImGuiIO& io = ImGui::GetIO();
@@ -70,6 +74,14 @@ int main()
         io.KeyAlt = io.KeysDown[Key::KEY_LEFT_ALT] || io.KeysDown[Key::KEY_RIGHT_ALT];
         io.KeySuper = false;
     };
+#else
+    callback.TextInputCallback = [](InputEvent::CharType type, unsigned int ch){};
+    callback.CursorPositionCallback = [](double xpos, double ypos) {};
+    callback.ScrollCallback = [](double xoffset, double yoffset) {};
+    callback.MouseButtonCallback = [](Action action, MouseButton key) {};
+    callback.KeyPressCallback = [](Action action, Key key) {};
+#endif
+
     if (!cgfRegisterGame("Test console", GraphicApi::OPENGL, callback))
     {
         std::cout << "Register failed\n";
@@ -88,7 +100,11 @@ int main()
     ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer backends
+#if defined(REMOTE_INPUT)
     ImgGui_InitForCloud(&window);
+#else
+    ImGui_ImplGlfw_InitForOpenGL(window.GetGlfw(), true);
+#endif
     ImGui_ImplOpenGL3_Init();
     bool show_demo_window = false, show_another_window;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -107,7 +123,11 @@ int main()
 
         start = std::chrono::high_resolution_clock::now();
         ImGui_ImplOpenGL3_NewFrame();
+#if defined(REMOTE_INPUT)
         ImGui_ImplGlfw_NewFrame(&window);
+#else
+        ImGui_ImplGlfw_NewFrame();
+#endif
         ImGui::NewFrame();
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
