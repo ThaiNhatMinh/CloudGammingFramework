@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include "common/Message.hh"
 #include "common/BufferStream.hh"
 #include "cgf/CloudGammingFrameworkClient.hh"
@@ -11,6 +13,10 @@ int w, h, bpp1;
 GLuint textId;
 GLuint CreateTexture(int w, int h);
 Window* window;
+float uploadTime = 0;
+const int PBO_COUNT = 2;
+GLuint pboIds[PBO_COUNT];           // IDs of PBOs
+void createfpo(int w, int h);
 void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
 {
     w = width;
@@ -18,13 +24,33 @@ void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
     bpp1 = bpp;
     std::cout << w << " " << h << " " << bpp1 << std::endl;
     textId = CreateTexture(w, h);
+    createfpo(w, h);
     window->Resize(w, h);
 }
 
 void frameFunc(const char* pFrameData)
 {
+    static int index = 0;
+    int nextIndex = 0;                  // pbo index used for next frame
+    index = (index + 1) % 2;
+    nextIndex = (index + 1) % 2;
+    auto start = std::chrono::high_resolution_clock::now();
     glBindTexture(GL_TEXTURE_2D, textId);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, pFrameData);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[index]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[nextIndex]);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, w * h * 4, 0, GL_STREAM_DRAW);
+    GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+    if(ptr)
+    {
+        // update data directly on the mapped buffer
+        std::memcpy(ptr, pFrameData, w * h * 4);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);  // release pointer to mapping buffer
+    }
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float, std::milli> delta = end - start;
+    uploadTime = delta.count();
 }
 
 int main(int argc, char** argv)
@@ -146,6 +172,9 @@ int main(int argc, char** argv)
     bool isConnect = false;
     char m_ip[20] = {"127.0.0.1"};
     int m_port = 8989;
+    bool show_demo_window = false;
+    float pollTime = 0;
+    float openglTime = 0;
     while (!window->ShouldClose())
     {
         window->HandleEvent();
@@ -182,7 +211,12 @@ int main(int argc, char** argv)
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         } else {
-            cgfClientPollEvent(1);
+            auto start = std::chrono::high_resolution_clock::now();
+            cgfClientPollEvent(0);
+            auto end = std::chrono::high_resolution_clock::now();
+            std::chrono::duration<float, std::milli> duration = end - start;
+            pollTime = duration.count();
+            start = std::chrono::high_resolution_clock::now();
             glFrontFace(GL_CW);
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, textId);
@@ -200,6 +234,22 @@ int main(int argc, char** argv)
             glTexCoord2f(1.0, 0.0);
             glVertex2f(1.0f, -1.0f); //vertex 4
             glEnd();
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            if (show_demo_window)
+                ImGui::ShowDemoWindow(&show_demo_window);
+            ImGui::Begin("Hello, world! from client");
+            ImGui::Text("This is some useful text.");
+            ImGui::Checkbox("Demo Window", &show_demo_window);
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Text("Upload time: %.2f ,\n poll time %.2f ,\n opengl time %.2f", uploadTime, pollTime, openglTime);
+            ImGui::End();
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            end = std::chrono::high_resolution_clock::now();
+            duration = end - start;
+            openglTime = duration.count();
         }
         window->SwapBuffer();
     }
@@ -211,7 +261,6 @@ int main(int argc, char** argv)
 
 GLuint CreateTexture(int w, int h)
 {
-    TRACE;
     GLuint textId;
     glGenTextures(1, &textId);
     glActiveTexture(GL_TEXTURE0);
@@ -220,6 +269,18 @@ GLuint CreateTexture(int w, int h)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  w, h, 0, GL_RGBA , GL_UNSIGNED_BYTE, nullptr);
     return textId;
+}
+
+void createfpo(int w, int h)
+{
+    // create 2 pixel buffer objects, you need to delete them when program exits.
+    // glBufferData() with NULL pointer reserves only memory space.
+    glGenBuffers(PBO_COUNT, pboIds);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
+    glBufferData(GL_PIXEL_PACK_BUFFER, w*h*4, 0, GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
+    glBufferData(GL_PIXEL_PACK_BUFFER, w*h*4, 0, GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
