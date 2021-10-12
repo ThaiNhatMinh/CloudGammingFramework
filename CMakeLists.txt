@@ -14,7 +14,8 @@ include_directories(3pp/doctest/doctest)
 include_directories(src)
 
 add_compile_definitions(LOG_STD)
-
+enable_testing()
 add_subdirectory(3pp)
 add_subdirectory(src)
 add_subdirectory(test)
+add_subdirectory(examples)
