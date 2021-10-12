@@ -14,7 +14,8 @@ void ThreadTest(PollHandle<2>* poll)
     CHECK(delta.count() < 1000);
 }
 
-TEST_CASE("Test Event class") {
+TEST_CASE("Test Event class")
+{
     const uint32_t NUM_EVENT = 20;
     Event main;
     std::list<Event> child;

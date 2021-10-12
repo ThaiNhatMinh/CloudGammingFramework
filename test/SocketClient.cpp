@@ -6,6 +6,7 @@
 
 int main()
 {
+    return -1;
     WsaSocket::Init();
     WsaSocket sock;
     if (!sock.Connect("127.0.0.1", 4568))
