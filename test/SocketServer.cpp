@@ -111,6 +111,7 @@ public:
 
 int main()
 {
+    return -1;
     WsaSocket::Init();
     
     Server server;

@@ -1,10 +1,10 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "doctest.h"
 #include <chrono>
 #include <thread>
 #include "ipc/WaitableTimer.hh"
-#include "doctest.h"
 
-TEST_CASE("Test Event class")
+TEST_CASE("Test WaitableTimer class")
 {
     WaitableTimer timer;
     REQUIRE(timer.Create("Local/t1"));
@@ -15,14 +15,13 @@ TEST_CASE("Test Event class")
         timer.SetTime(1000);
     });
     auto start = std::chrono::high_resolution_clock::now();
-    if (WaitForSingleObject(timer.GetHandle(), INFINITE) != WAIT_OBJECT_0)
-    {
-        FAIL_CHECK("WaitForSingleObject failed", GetLastError());
-    }
+
+    auto rc = WaitForSingleObject(timer.GetHandle(), 2500);
+    CHECK(rc != WAIT_FAILED);
+    CHECK(rc != WAIT_TIMEOUT);
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> elapsed = end-start;
-    std::cout << "Waited " << elapsed.count() << " ms\n";
     CHECK(elapsed.count() - 2000.0f <= 1.0f);
     t.join();
 }
