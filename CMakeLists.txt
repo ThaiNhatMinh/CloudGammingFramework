@@ -10,6 +10,7 @@ include_directories(3pp)
 include_directories(3pp/glfw/include)
 include_directories(3pp/imgui)
 include_directories(3pp/glad/include)
+include_directories(3pp/doctest/doctest)
 include_directories(src)
 
 add_compile_definitions(LOG_STD)
