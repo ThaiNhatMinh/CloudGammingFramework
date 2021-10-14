@@ -18,8 +18,7 @@ int main()
     std::unique_ptr<char[]> buffer;
     int w = 1920, h=1080, bpp = 3;
     buffer.reset(new char[w*h*bpp + MSG_HEADER_LENGTH]);
-    MessageHeader header;
-    header.code = Message::MSG_FRAME;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_FRAME);
     std::memcpy(buffer.get(), &header, MSG_HEADER_LENGTH);
     for (int i = 0; i< w * h * bpp; i++)
     {
