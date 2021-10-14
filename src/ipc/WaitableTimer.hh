@@ -16,7 +16,7 @@ public:
     bool Cancel() const;
     HANDLE GetHandle() const { return m_handle.get(); }
 
-    WaitableTimer() {TRACE;};
+    WaitableTimer() = default;
     WaitableTimer& operator=(WaitableTimer&& other)
     {
         m_handle = std::move(other.m_handle);

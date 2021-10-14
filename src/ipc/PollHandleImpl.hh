@@ -28,7 +28,7 @@ void PollHandle<size>::Poll(std::size_t timeout)
         }
         else if (index == WAIT_TIMEOUT)
         {
-            continue;
+            break;
         }
         index -= WAIT_OBJECT_0;
         // Wait for network events on all sockets

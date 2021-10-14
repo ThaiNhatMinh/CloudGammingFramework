@@ -13,7 +13,7 @@ private:
     bool m_isOpenCreate = false;
 
 public:
-    FileMapping() {TRACE;};
+    FileMapping() = default;
 
     /**
      * Create a new file mapping

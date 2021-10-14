@@ -50,7 +50,7 @@ public:
 
     HANDLE GetHandle() const { return m_handle.get(); }
 
-    Event() { TRACE;};
+    Event() = default;
     Event& operator=(Event&& other);
     Event(Event&& other);
 };
