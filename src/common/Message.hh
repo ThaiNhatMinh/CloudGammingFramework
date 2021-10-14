@@ -18,6 +18,8 @@ enum Message
 struct MessageHeader
 {
     Message code;
+    int reserved;
+    long long timeSinceEpoch;
 };
 
 /**
@@ -30,6 +32,3 @@ constexpr std::size_t MSG_INPUT_PACKAGE_SIZE = MSG_HEADER_LENGTH + sizeof(InputE
 constexpr std::size_t MSG_STARTGAME_PACKAGE_SIZE = MSG_HEADER_LENGTH + sizeof(GameId);
 
 MessageHeader CreateHeaderMsg(Message code);
-MessageHeader ParseHeaderMsg(const char* pBuffer);
-void CreateInputMsg(char* pBuffer, std::size_t bufferLength, const InputEvent& event);
-void CreateFrameMsg(char* pBuffer, std::size_t bufferLength, const void* pData, std::size_t dataLength);
