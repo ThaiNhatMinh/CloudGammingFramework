@@ -56,7 +56,7 @@ void frameFunc(const char* pFrameData)
 int main(int argc, char** argv)
 {
     window = new Window(500, 500, "Client game");
-    window->EnableVsync(true);
+    // window->EnableVsync(true);
     window->SetInputTextCallback([](unsigned int c)
     {
         InputEvent event;
@@ -255,6 +255,8 @@ int main(int argc, char** argv)
     }
     if (isConnect)
         cfgClientCloseGame();
+    else
+        std::cout << "Not connected\n";
     cgfClientFinalize();
     return 0;
 }
