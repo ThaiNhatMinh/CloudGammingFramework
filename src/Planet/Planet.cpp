@@ -131,6 +131,7 @@ void Planet::OnRecvControl(WsaSocket* sock, BufferStream10KB* buffer)
     } else if (header.code == Message::MSG_STOP_GAME)
     {
         m_pInfo->Status = GameStatus::SHUTTING_DOWN;
+        LOG_DEBUG << "Client request close game\n";
     } else
     {
         LOG_ERROR << "Unknow message code: " << header.code << std::endl;
@@ -157,8 +158,7 @@ void Planet::OnAcceptControl(WsaSocket* newConnect, BufferStream10KB* buffer)
         throw std::exception("Width is not set");
     }
     BufferStream1KB stream;
-    MessageHeader header;
-    header.code = Message::MSG_RESOLUTION;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_RESOLUTION);
     stream << header << m_Width << m_Height << m_BytePerPixel;
     header.code = Message::MSG_INIT;
     stream << header << m_numsocket << m_streamController.GetBytePerSocket();

@@ -40,8 +40,7 @@ bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
     }
 
     BufferStream1KB stream;
-    MessageHeader header;
-    header.code = Message::MSG_INIT;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_INIT);
     stream << header;
     stream << id;
     if (m_serverSocket.SendAll(stream.Get(), stream.Length()) == SOCKET_ERROR)
@@ -63,8 +62,8 @@ bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
 bool Satellite::RequestGame(GameId id)
 {
     BufferStream1KB stream;
-    stream << Message::MSG_START_GAME;
-    stream << id;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_START_GAME);
+    stream << header << id;
     if (m_serverSocket.SendAll(stream.Get(), stream.Length()) == SOCKET_ERROR)
     {
         LOG_ERROR << "Send error\n";
@@ -77,8 +76,8 @@ bool Satellite::SendInput(InputEvent event)
 {
     if (m_status != Status::RECEIVING_STREAM) return false;
     BufferStream1KB stream;
-    stream << Message::MSG_INPUT;
-    stream << event;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_INPUT);
+    stream << header << event;
     if (m_gameSocketInput.SendAll(stream.Get(), stream.Length()) == SOCKET_ERROR)
     {
         LOG_ERROR << "Send error\n";
@@ -165,6 +164,8 @@ void Satellite::OnRecvControl(WsaSocket* sock, BufferStream10KB* buffer)
         {
             this->m_frameFunc(this->m_streamController.GetFrame());
             if (this->m_streamController.NumFrameRemain() == 0) e->Reset();
+            else
+                LOG_DEBUG << "Nuim: " << this->m_streamController.NumFrameRemain() << '\n';
             return PollAction::NONE;
         });
     }
@@ -201,8 +202,7 @@ bool Satellite::PollEvent(std::size_t timeout)
 bool Satellite::CloseGame()
 {
     BufferStream1KB stream;
-    MessageHeader header;
-    header.code = Message::MSG_STOP_GAME;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_STOP_GAME);
     stream << header;
     m_gameSocketInput.SendAll(stream.Get(), stream.Length());
     return true;

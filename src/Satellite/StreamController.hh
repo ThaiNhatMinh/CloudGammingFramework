@@ -24,15 +24,25 @@ private:
         Event stopPollEvent;
         PollHandle<2> poll;
         bool isRecv;
+        uint32_t frameCounter;
+        long long sendTime;
+        std::chrono::duration<float, std::milli> delta;
+    };
+
+    struct DownloadingFrame
+    {
+        std::atomic_uint32_t numFinish;
+        std::unique_ptr<char[]> frame;
+        DownloadingFrame() = default;
+        DownloadingFrame(uint32_t size): numFinish(0), frame(new char[size]) {}
     };
 
 private:
     std::vector<SockPackage> m_data;
-    std::atomic_uint32_t m_numFinish;
     uint32_t m_frameCount;
     Frames m_frames;
     std::mutex m_lock;
-    std::unique_ptr<char[]> m_currentFrame;
+    std::vector<std::unique_ptr<DownloadingFrame>> m_downloading;
     Event m_frameCompleteEvent;
     Event m_stopThreadEvent;
 

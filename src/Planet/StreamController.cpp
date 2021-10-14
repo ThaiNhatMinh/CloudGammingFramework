@@ -137,10 +137,12 @@ void StreamController::StopPoll()
 void StreamController::SetFrame(const void* pData)
 {
     if (!m_bFullSocket) return;
-    auto start = std::chrono::high_resolution_clock::now();
     m_frameCounter++;
     std::memcpy(m_buffer.get(), pData, m_totalByte);
-    m_sendFrameEvent.Signal();
+    for(std::size_t i = 0; i < m_packages.size(); i++)
+    {
+        m_sendFrameEvent.Signal();
+    }
 }
 
 void StreamController::SendThread(Package* package)
@@ -156,11 +158,12 @@ PollAction StreamController::SendData(Package* package, const Event* e)
         LOG_ERROR << "Still sending\n";
         throw std::exception("Still sending");
     }
+    
     package->status = Status::SENDING;
-    MessageHeader header;
-    header.code = Message::MSG_FRAME;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_FRAME);
     BufferStream1KB stream;
     stream << header;
+    stream << m_frameCounter;
     WsaSocket& sock = package->socket;
     if (sock.SendAll(stream.Get(), stream.Length()) < stream.Length())
     {
@@ -170,6 +173,8 @@ PollAction StreamController::SendData(Package* package, const Event* e)
     {
         LOG_ERROR << "Send frame failed\n";
     }
+    // std::chrono::duration<float, std::milli> delta = std::chrono::high_resolution_clock::now() - start;
+    // LOG_THREAD << "Time delta: " << delta.count() << '\n';
     package->status = Status::ILDE;
     return PollAction::NONE;
 }

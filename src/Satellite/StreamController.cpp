@@ -34,9 +34,11 @@ bool StreamController::Init(const std::string& ip, StreamPort startPort, const s
         package.poll.AddEvent(package.stopPollEvent, [](const Event* e){ return PollAction::STOP_POLL; });
         offset += bytePerSocket[i];
     }
-    m_currentFrame.reset(new char[offset]);
+    for (int i = 0; i < 3; i++)
+    {
+        m_downloading.emplace_back(new DownloadingFrame(offset));
+    }
     m_frames.Init(20, offset);
-    m_numFinish = 0;
     if (!m_frameCompleteEvent.Create(CreateStreamControllerString(this), false, true))
         throw std::exception("Failed to create frame complete event");
     return true;
@@ -44,6 +46,7 @@ bool StreamController::Init(const std::string& ip, StreamPort startPort, const s
 
 void StreamController::Stop()
 {
+    m_stopThreadEvent.Signal();
     for (std::size_t i = 0; i < m_data.size(); i++)
     {
         m_stopThreadEvent.Signal();
@@ -72,20 +75,26 @@ void StreamController::OnRecv(int slot, WsaSocket* sock, BufferStream<MAX_BUFFER
     if (package.isRecv)
     {
         uint32_t byteToCopy = (package.numByte - package.currentByte) > buffer->Length() ? buffer->Length() : package.numByte - package.currentByte;
-        buffer->Extract(m_currentFrame.get() + package.offset + package.currentByte, byteToCopy);
+        uint32_t index = package.frameCounter % 3;
+        DownloadingFrame* downloading = m_downloading[index].get();
+        buffer->Extract(downloading->frame.get() + package.offset + package.currentByte, byteToCopy);
         package.currentByte += byteToCopy;
         if (package.currentByte == package.numByte)
         {
             package.currentByte = 0;
             package.isRecv = false;
-            m_numFinish += 1;
-            if (m_numFinish == m_data.size() && m_lock.try_lock())
+            downloading->numFinish += 1;
+            if (downloading->numFinish == m_data.size())
             {
                 m_frameCount++;
-                m_frames.PushBack(m_currentFrame.get());
+                m_frames.PushBack(downloading->frame.get());
                 m_frameCompleteEvent.Signal();
-                m_numFinish = 0;
-                m_lock.unlock();
+                downloading->numFinish = 0;
+                // LOG_THREAD << "Delta: " << std::chrono::high_resolution_clock::now().time_since_epoch().count() - package.startTime << '\n';
+            } else if (downloading->numFinish > m_data.size())
+            {
+                LOG_THREAD << "Index: " << index << " Num: " << downloading->numFinish << '\n';
+                throw std::exception("");
             }
         }
     } else
@@ -94,8 +103,12 @@ void StreamController::OnRecv(int slot, WsaSocket* sock, BufferStream<MAX_BUFFER
         *buffer >> header;
         if (header.code == Message::MSG_FRAME)
         {
+            *buffer >> package.frameCounter;
+            auto now = std::chrono::high_resolution_clock::now();
+            auto svTime = std::chrono::nanoseconds(header.timeSinceEpoch);
+            package.delta = now.time_since_epoch() - svTime;
             package.isRecv = true;
-        } else 
+        } else
         {
             throw std::exception("Invalid code");
         }

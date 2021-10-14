@@ -235,8 +235,7 @@ void Sun::LaunchGame(const WsaSocket* client, GameId id)
         LOG_ERROR << "Client request game: " << id << " but current running game: " << m_gameInstances[port].Id << std::endl;
     }
     BufferStream1KB stream;
-    MessageHeader header;
-    header.code = Message::MSG_START_GAME_RESP;
+    MessageHeader header = CreateHeaderMsg(Message::MSG_START_GAME_RESP);
     stream << header;
     StreamPort status;
     if (port == INVALID_PORT)
