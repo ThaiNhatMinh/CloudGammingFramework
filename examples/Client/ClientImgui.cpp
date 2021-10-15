@@ -2,8 +2,9 @@
 
 #include "common/Message.hh"
 #include "common/BufferStream.hh"
-#include "cgf/CloudGammingFrameworkClient.hh"
 #include "glad/glad.h"
+#include "cgf/CloudGammingFrameworkClient.hh"
+#include "cgf/CloudGammingOpenGL.hh"
 #include "glfw/GlfwWindow.hh"
 #include "ipc/WsaSocket.hh"
 #include "imgui/backends/imgui_impl_glfw.h"
@@ -11,43 +12,22 @@
 
 int w, h, bpp1;
 GLuint textId;
-GLuint CreateTexture(int w, int h);
 Window* window;
 float uploadTime = 0;
-const int PBO_COUNT = 2;
-GLuint pboIds[PBO_COUNT];           // IDs of PBOs
-void createfpo(int w, int h);
 void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
 {
     w = width;
     h = height;
     bpp1 = bpp;
     std::cout << w << " " << h << " " << bpp1 << std::endl;
-    textId = CreateTexture(w, h);
-    createfpo(w, h);
+    textId = cgfOpenglInit(w, h);
     window->Resize(w, h);
 }
 
 void frameFunc(const char* pFrameData)
 {
-    static int index = 0;
-    int nextIndex = 0;                  // pbo index used for next frame
-    index = (index + 1) % 2;
-    nextIndex = (index + 1) % 2;
     auto start = std::chrono::high_resolution_clock::now();
-    glBindTexture(GL_TEXTURE_2D, textId);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[index]);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[nextIndex]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, w * h * 4, 0, GL_STREAM_DRAW);
-    GLubyte* ptr = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-    if(ptr)
-    {
-        // update data directly on the mapped buffer
-        std::memcpy(ptr, pFrameData, w * h * 4);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);  // release pointer to mapping buffer
-    }
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    cgfUpdateTexture(pFrameData);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> delta = end - start;
     uploadTime = delta.count();
@@ -242,32 +222,7 @@ int main(int argc, char** argv)
         cfgClientCloseGame();
     else
         std::cout << "Not connected\n";
+    cgfOpenglRelease();
     cgfClientFinalize();
     return 0;
-}
-
-GLuint CreateTexture(int w, int h)
-{
-    GLuint textId;
-    glGenTextures(1, &textId);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textId);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  w, h, 0, GL_RGBA , GL_UNSIGNED_BYTE, nullptr);
-    return textId;
-}
-
-void createfpo(int w, int h)
-{
-    // create 2 pixel buffer objects, you need to delete them when program exits.
-    // glBufferData() with NULL pointer reserves only memory space.
-    glGenBuffers(PBO_COUNT, pboIds);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
-    glBufferData(GL_PIXEL_PACK_BUFFER, w*h*4, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
-    glBufferData(GL_PIXEL_PACK_BUFFER, w*h*4, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }

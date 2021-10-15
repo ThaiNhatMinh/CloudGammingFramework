@@ -74,7 +74,10 @@
         "xlocbuf": "cpp",
         "xlocmes": "cpp",
         "*.rh": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "csignal": "cpp",
+        "numeric": "cpp",
+        "set": "cpp"
     },
     "cmake.configureOnOpen": true
 }

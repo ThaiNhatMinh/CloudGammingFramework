@@ -1,5 +1,6 @@
 #include "glad/glad.h"
 #include "cgf/CloudGammingFramework.hh"
+#include "cgf/CloudGammingOpenGL.hh"
 #include "common/Logger.hh"
 #include "glfw/GlfwWindow.hh"
 #include "imgui/backends/imgui_impl_glfw.h"
@@ -7,8 +8,6 @@
 #include <chrono>
 
 constexpr std::size_t W = 800, H = 600;
-const int PBO_COUNT = 2;
-GLuint pboIds[PBO_COUNT];           // IDs of PBOs
 const int DATA_SIZE = W * H * 4;
 void createfpo();
 void ImGui_ImplGlfw_NewFrame(Window * pWindow);
@@ -28,7 +27,7 @@ int main()
             return -1;
         }
     }
-    createfpo();
+    cgfCaptureOpenglInit(W, H);
     InputCallback callback;
     std::memset(&callback, 0, sizeof(callback));
 #if defined(REMOTE_INPUT)
@@ -158,27 +157,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         start = std::chrono::high_resolution_clock::now();
-        static int index = 0;
-        int nextIndex = 0;                  // pbo index used for next frame
-        index = (index + 1) % 2;
-        nextIndex = (index + 1) % 2;
-
-        glReadBuffer(GL_FRONT);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[index]);
-        glReadPixels(0, 0, W, H, GL_BGRA, GL_UNSIGNED_BYTE , 0);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[nextIndex]);
-        GLubyte* src = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-
-        if(src)
-        {
-            cgfSetFrame(src);
-            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);        // release pointer to the mapped buffer
-        } else {
-            LOG_ERROR << "NULL\n";
-        }
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        
+        cgfCaptureOpenglFrame(cgfSetFrame);        
         end = std::chrono::high_resolution_clock::now();
         elapsed = end-start;
         sendFrameTime = elapsed.count();
@@ -188,18 +167,6 @@ int main()
     cgfFinalize();
 
     return 0;
-}
-
-void createfpo()
-{
-    // create 2 pixel buffer objects, you need to delete them when program exits.
-    // glBufferData() with NULL pointer reserves only memory space.
-    glGenBuffers(PBO_COUNT, pboIds);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
-    glBufferData(GL_PIXEL_PACK_BUFFER, DATA_SIZE, 0, GL_STREAM_READ);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[1]);
-    glBufferData(GL_PIXEL_PACK_BUFFER, DATA_SIZE, 0, GL_STREAM_READ);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
 void ImGui_ImplGlfw_NewFrame(Window *pWindow)
