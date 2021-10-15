@@ -66,20 +66,14 @@ int main(int argc, char** argv)
             event.key.action = Action::PRESSING;
         // std::cout << "Scancode: " << scancode << " mods: " << mods << std::endl;
         std::cout << "Action: " << event.key.action << " Key: " << event.key.key << std::endl;
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR\n";
-        }
+        cgfClientSendEvent(event);
     });
     window.SetMouseMoveCallback([](float xpos, float ypos){
         InputEvent event;
         event.type = InputEvent::EventType::MOUSE_MOVE;
         event.mousePos.x = xpos;
         event.mousePos.y = ypos;
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR\n";
-        }
+        cgfClientSendEvent(event);
     });
     while (!window.ShouldClose())
     {

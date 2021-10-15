@@ -63,10 +63,7 @@ int main(int argc, char** argv)
         event.type = InputEvent::EventType::TEXT_INPUT;
         event.text.type = InputEvent::CharType::ASCII;
         event.text.character = c;
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR\n";
-        }
+        cgfClientSendEvent(event);
     });
     window->SetScrollCallback([](double xoffset, double yoffset)
     {
@@ -74,10 +71,7 @@ int main(int argc, char** argv)
         event.type = InputEvent::EventType::SCROLL;
         event.scroll.xoffset = xoffset;
         event.scroll.yoffset = yoffset;
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR\n";
-        }
+        cgfClientSendEvent(event);
     });
     window->SetKeyCallback([](int key, int scancode, int action, int mods)
     {
@@ -97,10 +91,7 @@ int main(int argc, char** argv)
         }
         // std::cout << "Scancode: " << scancode << " mods: " << mods << std::endl;
         std::cout << "Action: " << event.key.action << " Key: " << event.key.key << std::endl;
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR\n";
-        }
+        cgfClientSendEvent(event);
     });
 
     window->SetMouseMoveCallback([](float xpos, float ypos){
@@ -108,10 +99,7 @@ int main(int argc, char** argv)
         event.type = InputEvent::EventType::MOUSE_MOVE;
         event.mousePos.x = xpos;
         event.mousePos.y = ypos;
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR send event\n";
-        }
+        cgfClientSendEvent(event);
     });
     window->SetMouseCallback([](int button, int action, int mods)
     {
@@ -135,10 +123,7 @@ int main(int argc, char** argv)
             std::cout << "Unknow button: " << button;
             throw std::exception("Unknow button");
         }
-        if (!cgfClientSendEvent(event))
-        {
-            std::cout << "ERROR send SetMouseCallback event\n";
-        }
+        cgfClientSendEvent(event);
     });
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         LOG << "Failed to initialize OpenGL context" << std::endl;
