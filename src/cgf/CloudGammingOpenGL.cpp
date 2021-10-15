@@ -149,7 +149,7 @@ GLuint cgfOpenglInit(int width, int height)
     return data.textureId;
 }
 
-void cgfUpdateTexture(const void *pData)
+void cgfUpdateOpenglTexture(const void *pData)
 {
     int nextIndex = 0; // pbo index used for next frame
     data.index = (data.index + 1) % 2;

@@ -27,7 +27,7 @@ void resFunc(unsigned int width, unsigned int height, unsigned char bpp)
 void frameFunc(const char* pFrameData)
 {
     auto start = std::chrono::high_resolution_clock::now();
-    cgfUpdateTexture(pFrameData);
+    cgfUpdateOpenglTexture(pFrameData);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<float, std::milli> delta = end - start;
     uploadTime = delta.count();
