@@ -55,7 +55,7 @@ bool Satellite::Connect(ClientId id, const std::string& ip, unsigned short port)
     m_thread = std::thread(&Satellite::InternalThread, this);
     m_signal.Wait(100);
     m_bIsReceivingFrame = false;
-    m_status = Status::CONNECTED;
+    m_status |= Status::SERVER_CONNECTED;
     return true;
 }
 
@@ -69,12 +69,13 @@ bool Satellite::RequestGame(GameId id)
         LOG_ERROR << "Send error\n";
         return false;
     }
+    m_status |= Status::REQUESTING_GAME;
     return true;
 }
 
 bool Satellite::SendInput(InputEvent event)
 {
-    if (m_status != Status::RECEIVING_STREAM) return false;
+    if (!(m_status & Status::GAME_CONNECTED)) return false;
     BufferStream1KB stream;
     MessageHeader header = CreateHeaderMsg(Message::MSG_INPUT);
     stream << header << event;
@@ -109,6 +110,7 @@ void Satellite::OnRecvServer(WsaSocket* sock, BufferStream10KB* buffer)
             LOG_ERROR << "Failed to connect to game\n";
             return;
         }
+        m_status |= Status::GAME_CONNECTED;
         POLL_ADD_SOCKET_RECV(m_socketPoll, m_gameSocketInput, &Satellite::OnClose, &Satellite::OnRecvControl);
     } else
     {
@@ -120,7 +122,7 @@ void Satellite::OnClose(WsaSocket* sock, BufferStream10KB* buffer)
 {
     if (*sock == m_gameSocketInput)
     {
-        m_status = Status::DISCONNECTED;
+        m_status |= Status::DISCONNECTED;
     }
     sock->Release();
 }
@@ -141,7 +143,7 @@ void Satellite::OnRecvControl(WsaSocket* sock, BufferStream10KB* buffer)
         m_gameHeight = h;
         m_bytePerPixel = bpp;
         m_resolutionChangeEvent.Signal();
-        m_status = Status::RECEIVING_STREAM;
+        m_status |= Status::RECEIVING_STREAM;
     } else
     {
         LOG_DEBUG << "Unknow code " << header.code << std::endl;
@@ -201,6 +203,7 @@ bool Satellite::PollEvent(std::size_t timeout)
 
 bool Satellite::CloseGame()
 {
+    m_status |= Status::CLOSING_GAME;
     BufferStream1KB stream;
     MessageHeader header = CreateHeaderMsg(Message::MSG_STOP_GAME);
     stream << header;

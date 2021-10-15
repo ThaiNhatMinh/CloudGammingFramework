@@ -15,15 +15,17 @@
 class Satellite
 {
 public:
+    // TODO: Improve to check each bit slot
     enum Status
     {
-        INITED,
-        CONNECTED,
-        REQUESTED_GAME,
-        RECEIVING_STREAM,
-        CLOSING_GAME,
-        FINALIZE,
-        DISCONNECTED
+        INITED              = 1 << 1,
+        SERVER_CONNECTED    = 1 << 2,
+        REQUESTING_GAME     = 1 << 3,
+        RECEIVING_STREAM    = 1 << 4,
+        CLOSING_GAME        = 1 << 5,
+        FINALIZE            = 1 << 6,
+        DISCONNECTED        = 1 << 7,
+        GAME_CONNECTED      = 1 << 8
     };
 
 private:
@@ -43,13 +45,13 @@ private:
     bool m_bIsReceivingFrame;
     cgfResolutionfun m_resFunc;
     cgfFramefun m_frameFunc;
-    Status m_status;
+    uint32_t m_status;
     StreamController m_streamController;
     PollHandle<2> m_callbackPoll;
     PollHandle64 m_socketPoll;
 
 public:
-    Satellite(): m_bIsReceivingFrame(false) { WsaSocket::Init(); }
+    Satellite(): m_bIsReceivingFrame(false), m_status(0) { WsaSocket::Init(); }
     ~Satellite();
     bool Initialize(cgfResolutionfun resFunc, cgfFramefun frameFunc);
     bool Connect(ClientId id, const std::string& ip, unsigned short port);
